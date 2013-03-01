@@ -59,10 +59,12 @@ import net.floodlightcontroller.core.IOFSwitchFilter;
 import net.floodlightcontroller.core.IOFSwitchListener;
 import net.floodlightcontroller.core.annotations.LogMessageDoc;
 import net.floodlightcontroller.core.annotations.LogMessageDocs;
+import net.floodlightcontroller.core.deputy.KernelDeputy;
 import net.floodlightcontroller.core.internal.OFChannelState.HandshakeState;
 import net.floodlightcontroller.core.util.ListenerDispatcher;
 import net.floodlightcontroller.core.web.CoreWebRoutable;
 import net.floodlightcontroller.counter.ICounterStoreService;
+import net.floodlightcontroller.hub.Hub;
 import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.perfmon.IPktInProcessingTimeService;
 import net.floodlightcontroller.restserver.IRestApiService;
@@ -140,6 +142,8 @@ public class Controller implements IFloodlightProviderService,
 
     private static final String ERROR_DATABASE = 
             "The controller could not communicate with the system database.";
+    
+    public static KernelDeputy deputy;
     
     protected BasicFactory factory;
     protected ConcurrentMap<OFType,
@@ -1280,10 +1284,33 @@ public class Controller implements IFloodlightProviderService,
                                 continue;
                             }
                         }
-
-                        pktinProcTime.recordStartTimeComp(listener);
-                        cmd = listener.receive(sw, m, bc);
-                        pktinProcTime.recordEndTimeComp(listener);
+                        
+                        if (listener instanceof Hub) {
+                        	List<Object> paras = new ArrayList<Object>();
+                        	Object waitLock = new Object();
+                        	
+                        	paras.add(new OFSwitchForApp((OFSwitchImpl)sw));
+                        	paras.add(m);
+                        	paras.add(bc);
+                        	paras.add(waitLock);
+                        	Hub.eventQueue.add(paras);
+                        	synchronized(Hub.packetInMonitor) {
+                        		Hub.packetInMonitor.notifyAll();
+                        	}
+                        	cmd = Command.CONTINUE;
+                        	
+                        	// try syncronized waitLock later?
+                        	/*try {
+                        		waitLock.wait();
+                        	} catch (InterruptedException e) {
+                        		
+                        	}*/ 
+                        }
+                        else {
+	                        pktinProcTime.recordStartTimeComp(listener);
+	                        cmd = listener.receive(sw, m, bc);
+	                        pktinProcTime.recordEndTimeComp(listener);
+                        }
                         
                         if (Command.STOP.equals(cmd)) {
                             break;
