@@ -35,10 +35,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.Queue;
 import java.util.Set;
 import java.util.Stack;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executors;
@@ -64,7 +66,6 @@ import net.floodlightcontroller.core.internal.OFChannelState.HandshakeState;
 import net.floodlightcontroller.core.util.ListenerDispatcher;
 import net.floodlightcontroller.core.web.CoreWebRoutable;
 import net.floodlightcontroller.counter.ICounterStoreService;
-import net.floodlightcontroller.hub.Hub;
 import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.perfmon.IPktInProcessingTimeService;
 import net.floodlightcontroller.restserver.IRestApiService;
@@ -74,6 +75,8 @@ import net.floodlightcontroller.storage.IStorageSourceService;
 import net.floodlightcontroller.storage.OperatorPredicate;
 import net.floodlightcontroller.storage.StorageException;
 import net.floodlightcontroller.threadpool.IThreadPoolService;
+import net.floodlightcontroller.util.QueueReader;
+import net.floodlightcontroller.util.QueueWriter;
 
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -132,6 +135,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import chao.floodlightcontroller.safethread.FloodlightModuleRunnable;
+import chao.floodlightcontroller.safethread.message.OFEvent;
+import chao.floodlightcontroller.safethread.message.OFEventResponse;
 import chao.floodlightcontroller.safethread.message.OFMessageEvent;
 
 /**
@@ -282,7 +287,7 @@ public class Controller implements IFloodlightProviderService,
 						listener.removedSwitch(sw);
 						break;
 					case PORTCHANGED:
-						listener.switchPortChanged(sw.getId());
+						listener.switchPortChanged(sw.getObjectId());
 						break;
 					}
 				}
@@ -480,7 +485,7 @@ public class Controller implements IFloodlightProviderService,
 		public void channelDisconnected(ChannelHandlerContext ctx,
 				ChannelStateEvent e) throws Exception {
 			if (sw != null && state.hsState == HandshakeState.READY) {
-				if (activeSwitches.containsKey(sw.getId())) {
+				if (activeSwitches.containsKey(sw.getObjectId())) {
 					// It's safe to call removeSwitch even though the map might
 					// not contain this particular switch but another with the
 					// same DPID
@@ -785,7 +790,7 @@ public class Controller implements IFloodlightProviderService,
 
 			sw.deliverRoleReply(vendorMessage.getXid(), role);
 
-			boolean isActive = activeSwitches.containsKey(sw.getId());
+			boolean isActive = activeSwitches.containsKey(sw.getObjectId());
 			if (!isActive && sw.isActive()) {
 				// Transition from SLAVE to MASTER.
 
@@ -814,7 +819,7 @@ public class Controller implements IFloodlightProviderService,
 					sw.clearAllFlowMods();
 					log.debug("First role reply from master switch {}, "
 							+ "clear FlowTable to active switch list",
-							HexString.toHexString(sw.getId()));
+							HexString.toHexString(sw.getObjectId()));
 				}
 
 				// Some switches don't seem to update us with port
@@ -829,13 +834,13 @@ public class Controller implements IFloodlightProviderService,
 				// switch should be included in the active switch list.
 				addSwitch(sw);
 				log.debug("Added master switch {} to active switch list",
-						HexString.toHexString(sw.getId()));
+						HexString.toHexString(sw.getObjectId()));
 
 			} else if (isActive && !sw.isActive()) {
 				// Transition from MASTER to SLAVE: remove switch
 				// from active switch list.
 				log.debug("Removed slave switch {} from active switch"
-						+ " list", HexString.toHexString(sw.getId()));
+						+ " list", HexString.toHexString(sw.getObjectId()));
 				removeSwitch(sw);
 			}
 
@@ -1255,25 +1260,26 @@ public class Controller implements IFloodlightProviderService,
 
 					// Listener is registered as FloodlightModuleRunnable
 					if (listener instanceof FloodlightModuleRunnable) {
-						FloodlightModuleRunnable mr = (FloodlightModuleRunnable) listener;
-
-						OFMessageEvent info = new OFMessageEvent((FloodlightModuleRunnable) listener, m,
-								new OFSwitchForApp((OFSwitchImpl) sw), bc);
-						mr.writeOFEventToQueue(info);
-
-						// wait for the command to come
-						synchronized (this) {
-							while (returnCommand == null) {
-								try {
-									this.wait();
-								} catch (InterruptedException e) {
-									// TODO Auto-generated catch block
-									e.printStackTrace();
-								}
-							}
-							cmd = returnCommand;
-							returnCommand = null;
-						}
+						Queue<OFEventResponse> queue = new ConcurrentLinkedQueue<OFEventResponse>();
+						Object monitor = new Object();
+						QueueReader<OFEventResponse> qr = new QueueReader<OFEventResponse>(monitor, queue);
+						QueueWriter<OFEventResponse> qw = new QueueWriter<OFEventResponse>(monitor, queue);
+						FloodlightModuleRunnable app = (FloodlightModuleRunnable) listener;
+						
+						// Conduct sanitizing
+						
+						// Issue event
+						OFEvent t = new OFMessageEvent(qw, app, m, sw, bc);
+						app.eventQueueWriter.write(t);
+						app.eventQueueWriter.notifies();
+						
+						// Wait to obtain return value
+						qr.waits();
+						OFEventResponse r = qr.read();
+						if (r!=null)
+							cmd = r.command;
+						else
+							cmd = Command.CONTINUE;
 
 					} else {
 						pktinProcTime.recordStartTimeComp(listener);
@@ -1371,7 +1377,7 @@ public class Controller implements IFloodlightProviderService,
 	protected void addSwitch(IOFSwitch sw) {
 		// TODO: is it safe to modify the HashMap without holding
 		// the old switch's lock?
-		OFSwitchImpl oldSw = (OFSwitchImpl) this.activeSwitches.put(sw.getId(),
+		OFSwitchImpl oldSw = (OFSwitchImpl) this.activeSwitches.put(sw.getObjectId(),
 				sw);
 		if (sw == oldSw) {
 			// Note == for object equality, not .equals for value
@@ -1437,7 +1443,7 @@ public class Controller implements IFloodlightProviderService,
 		// this method is only called after netty has processed all
 		// pending messages
 		log.debug("removeSwitch: {}", sw);
-		if (!this.activeSwitches.remove(sw.getId(), sw) || !sw.isConnected()) {
+		if (!this.activeSwitches.remove(sw.getObjectId(), sw) || !sw.isConnected()) {
 			log.debug("Not removing switch {}; already removed", sw);
 			return;
 		}
@@ -1567,7 +1573,7 @@ public class Controller implements IFloodlightProviderService,
 		// inject the message as a netty upstream channel event so it goes
 		// through the normal netty event processing, including being
 		// handled
-		if (!activeSwitches.containsKey(sw.getId()))
+		if (!activeSwitches.containsKey(sw.getObjectId()))
 			return false;
 
 		try {
@@ -1575,7 +1581,7 @@ public class Controller implements IFloodlightProviderService,
 			handleMessage(sw, msg, bc);
 		} catch (IOException e) {
 			log.error("Error reinjecting OFMessage on switch {}",
-					HexString.toHexString(sw.getId()));
+					HexString.toHexString(sw.getObjectId()));
 			return false;
 		}
 		return true;

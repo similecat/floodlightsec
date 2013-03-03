@@ -755,7 +755,7 @@ public class TopologyManager implements
             if (log.isTraceEnabled()) {
                 log.trace("write broadcast packet on switch-id={} " + 
                         "interaces={} packet-data={} packet-out={}",
-                        new Object[] {sw.getId(), ports, packetData, po});
+                        new Object[] {sw.getObjectId(), ports, packetData, po});
             }
             sw.write(po, cntx);
 
@@ -841,9 +841,9 @@ public class TopologyManager implements
             if (bsn.getPayload() instanceof LLDP == false)
                 return Command.CONTINUE;
 
-            doFloodBDDP(sw.getId(), pi, cntx);
+            doFloodBDDP(sw.getObjectId(), pi, cntx);
         } else {
-            return dropFilter(sw.getId(), pi, cntx);
+            return dropFilter(sw.getObjectId(), pi, cntx);
         }
         return Command.STOP;
     }

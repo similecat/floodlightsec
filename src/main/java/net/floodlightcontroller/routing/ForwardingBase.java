@@ -280,7 +280,7 @@ public abstract class ForwardingBase
                 }
 
                 // Push the packet out the source switch
-                if (sw.getId() == pinSwitch) {
+                if (sw.getObjectId() == pinSwitch) {
                     // TODO: Instead of doing a packetOut here we could also 
                     // send a flowMod with bufferId set.... 
                     pushPacket(sw, match, pi, outPort, cntx);
@@ -522,7 +522,7 @@ public abstract class ForwardingBase
             if (log.isTraceEnabled()) {
                 log.trace("write broadcast packet on switch-id={} " + 
                         "interfaces={} packet-out={}",
-                        new Object[] {sw.getId(), outPorts, po});
+                        new Object[] {sw.getObjectId(), outPorts, po});
             }
             messageDamper.write(sw, po, cntx);
 
@@ -571,7 +571,7 @@ public abstract class ForwardingBase
                 IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
         
         Long broadcastHash;
-        broadcastHash = topology.getL2DomainId(sw.getId()) * prime1 +
+        broadcastHash = topology.getL2DomainId(sw.getObjectId()) * prime1 +
                         pi.getInPort() * prime2 + eth.hashCode();
         if (broadcastCache.update(broadcastHash)) {
             sw.updateBroadcastCache(broadcastHash, pi.getInPort());

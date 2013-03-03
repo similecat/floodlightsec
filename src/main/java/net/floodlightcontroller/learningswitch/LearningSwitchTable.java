@@ -48,7 +48,7 @@ public class LearningSwitchTable extends ServerResource {
         String switchId = (String) getRequestAttributes().get("switch");
         if (switchId.toLowerCase().equals("all")) {
             for (IOFSwitch sw : table.keySet()) {
-                allSwitchTableJson.put(HexString.toHexString(sw.getId()), getOneSwitchTable(table.get(sw)));
+                allSwitchTableJson.put(HexString.toHexString(sw.getObjectId()), getOneSwitchTable(table.get(sw)));
             }
         } else {
             try {
@@ -57,7 +57,7 @@ public class LearningSwitchTable extends ServerResource {
                             get(IFloodlightProviderService.class.getCanonicalName());
                 long dpid = HexString.toLong(switchId);
                 IOFSwitch sw = floodlightProvider.getSwitches().get(dpid);
-                allSwitchTableJson.put(HexString.toHexString(sw.getId()), getOneSwitchTable(table.get(sw)));
+                allSwitchTableJson.put(HexString.toHexString(sw.getObjectId()), getOneSwitchTable(table.get(sw)));
             } catch (NumberFormatException e) {
                 log.error("Could not decode switch ID = " + switchId);
                 setStatus(Status.CLIENT_ERROR_BAD_REQUEST);

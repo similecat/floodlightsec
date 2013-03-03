@@ -2,6 +2,7 @@ package chao.floodlightcontroller.safethread.message;
 
 import net.floodlightcontroller.core.FloodlightContext;
 import net.floodlightcontroller.core.IOFSwitch;
+import net.floodlightcontroller.util.QueueWriter;
 
 import org.openflow.protocol.OFMessage;
 
@@ -26,8 +27,8 @@ public class OFMessageEvent extends OFEvent{
 	 * @param sw The OFSwitch
 	 * @param cntx The FloodlightContext
 	 */
-	public OFMessageEvent(FloodlightModuleRunnable receiver, OFMessage msg, IOFSwitch sw, FloodlightContext cntx) {
-		super(OFEvent.Type.OFMessage);
+	public OFMessageEvent(QueueWriter<OFEventResponse> qw, FloodlightModuleRunnable receiver, OFMessage msg, IOFSwitch sw, FloodlightContext cntx) {
+		super(OFEvent.Type.OFMessage, qw);
 		this.receiver = receiver;
 		this.msg = msg;
 		this.sw = sw;

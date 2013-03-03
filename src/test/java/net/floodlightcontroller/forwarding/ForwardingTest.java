@@ -157,13 +157,13 @@ public class ForwardingTest extends FloodlightTestCase {
         swFeatures.setBuffers(1000);
         // Mock switches
         sw1 = EasyMock.createMock(IOFSwitch.class);
-        expect(sw1.getId()).andReturn(1L).anyTimes();
+        expect(sw1.getObjectId()).andReturn(1L).anyTimes();
         expect(sw1.getBuffers()).andReturn(swFeatures.getBuffers()).anyTimes();
         expect(sw1.getStringId())
                 .andReturn(HexString.toHexString(1L)).anyTimes();
 
         sw2 = EasyMock.createMock(IOFSwitch.class);  
-        expect(sw2.getId()).andReturn(2L).anyTimes();
+        expect(sw2.getObjectId()).andReturn(2L).anyTimes();
         expect(sw2.getBuffers()).andReturn(swFeatures.getBuffers()).anyTimes();
         expect(sw2.getStringId())
                 .andReturn(HexString.toHexString(2L)).anyTimes();

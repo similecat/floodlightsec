@@ -92,7 +92,7 @@ public class DeviceManagerImplTest extends FloodlightTestCase {
 
     private IOFSwitch makeSwitchMock(long id) {
         IOFSwitch mockSwitch = createMock(IOFSwitch.class);
-        expect(mockSwitch.getId()).andReturn(id).anyTimes();
+        expect(mockSwitch.getObjectId()).andReturn(id).anyTimes();
         expect(mockSwitch.getStringId()).
         andReturn(HexString.toHexString(id, 6)).anyTimes();
         expect(mockSwitch.getPort(anyShort())).

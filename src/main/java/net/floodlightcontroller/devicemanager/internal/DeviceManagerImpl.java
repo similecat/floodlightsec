@@ -751,7 +751,7 @@ IFlowReconcileListener, IInfoProvider, IHAListener {
 
         // Extract source entity information
         Entity srcEntity =
-                getSourceEntityFromPacket(eth, sw.getId(), pi.getInPort());
+                getSourceEntityFromPacket(eth, sw.getObjectId(), pi.getInPort());
         if (srcEntity == null)
             return Command.STOP;
 

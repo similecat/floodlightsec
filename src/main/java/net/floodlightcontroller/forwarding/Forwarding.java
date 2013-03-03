@@ -173,7 +173,7 @@ public class Forwarding extends ForwardingBase implements IFloodlightModule {
             IDevice srcDevice =
                     IDeviceService.fcStore.
                         get(cntx, IDeviceService.CONTEXT_SRC_DEVICE);
-            Long srcIsland = topology.getL2DomainId(sw.getId());
+            Long srcIsland = topology.getL2DomainId(sw.getObjectId());
             
             if (srcDevice == null) {
                 log.debug("No device entry found for source device");
@@ -194,7 +194,7 @@ public class Forwarding extends ForwardingBase implements IFloodlightModule {
                 Long dstIsland = topology.getL2DomainId(dstSwDpid);
                 if ((dstIsland != null) && dstIsland.equals(srcIsland)) {
                     on_same_island = true;
-                    if ((sw.getId() == dstSwDpid) &&
+                    if ((sw.getObjectId() == dstSwDpid) &&
                         (pi.getInPort() == dstDap.getPort())) {
                         on_same_if = true;
                     }
@@ -283,7 +283,7 @@ public class Forwarding extends ForwardingBase implements IFloodlightModule {
                                         & ~OFMatch.OFPFW_NW_DST_MASK;
                             }
 
-                            pushRoute(route, match, wildcard_hints, pi, sw.getId(), cookie, 
+                            pushRoute(route, match, wildcard_hints, pi, sw.getObjectId(), cookie, 
                                       cntx, requestFlowRemovedNotifn, false,
                                       OFFlowMod.OFPFC_ADD);
                         }
@@ -317,12 +317,12 @@ public class Forwarding extends ForwardingBase implements IFloodlightModule {
                    		"out message to the switch",
                    recommendation=LogMessageDoc.CHECK_SWITCH)
     protected void doFlood(IOFSwitch sw, OFPacketIn pi, FloodlightContext cntx) {
-        if (topology.isIncomingBroadcastAllowed(sw.getId(),
+        if (topology.isIncomingBroadcastAllowed(sw.getObjectId(),
                                                 pi.getInPort()) == false) {
             if (log.isTraceEnabled()) {
                 log.trace("doFlood, drop broadcast packet, pi={}, " + 
                           "from a blocked port, srcSwitch=[{},{}], linkInfo={}",
-                          new Object[] {pi, sw.getId(),pi.getInPort()});
+                          new Object[] {pi, sw.getObjectId(),pi.getInPort()});
             }
             return;
         }

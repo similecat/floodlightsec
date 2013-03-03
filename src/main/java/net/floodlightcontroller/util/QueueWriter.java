@@ -1,0 +1,23 @@
+package net.floodlightcontroller.util;
+
+import java.util.Queue;
+
+public class QueueWriter<T> {
+	private final Object monitor;
+	private final Queue<T> queue;
+
+	public QueueWriter(Object m, Queue<T> q) {
+		monitor = m;
+		queue = q;
+	}
+	
+	public void notifies() {
+		synchronized(monitor) {
+			monitor.notifyAll();
+		}
+	}
+	
+	public boolean write(T t) {
+		return queue.add(t);
+	}
+}

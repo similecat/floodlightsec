@@ -4,129 +4,66 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import net.floodlightcontroller.util.QueueReader;
+import net.floodlightcontroller.util.QueueWriter;
+
 import chao.floodlightcontroller.safethread.message.ApiRequest;
 import chao.floodlightcontroller.safethread.message.ApiResponse;
 
 /**
- * The base function for all proxies. There is not get or set function to the
- * member of pThread
+ * The base class for API proxies. 
  * 
- * @author shichao
+ * @author shichao, Xitao Wen
  * 
  */
 public abstract class ProxyBase {
 
-	protected final long id;
-	protected final FloodlightModuleRunnable thread;
-	protected Queue<ApiResponse> response_queue;
-	protected Object inboundMonitor;
-	protected Object apiLock;
+	protected final long id; // Object ID assigned by kernel
+	protected final FloodlightModuleRunnable app; // Associated app
+	
+	protected final QueueWriter<ApiRequest> kernelQueueWriter; // Kernel api queue
 
-	protected ProxyBase(long id, FloodlightModuleRunnable thread) {
+	protected ProxyBase(long id, FloodlightModuleRunnable app, QueueWriter<ApiRequest> qw) {
 		this.id = id;
-		this.thread = thread;
-		this.response_queue = new ConcurrentLinkedQueue<ApiResponse>();
-		this.inboundMonitor = new Object();
-		this.apiLock = new Object();
+		this.app = app;
+		this.kernelQueueWriter = qw;
 	}
 
-	public long getId() {
+	public long getObjectId() {
 		return this.id;
 	}
 
-	protected void voidApiCall(String method, List<Object> args) {
-		synchronized (apiLock) {
-			ApiRequest req = new ApiRequest(id, method, args);
-			this.writeApiRequestToKernelQueue(req);
-		}
+	protected void apiRequestAsync(String method, List<Object> args) {
+		ApiRequest req = new ApiRequest(this.id, method, this.app, args, null);
+		this.writeApiRequestToKernelQueue(req);
 	}
 
-	protected Object fullApiCall(String method, List<Object> args) {
-		synchronized (apiLock) {
-			ApiRequest req = new ApiRequest(id, method, args);
-			this.writeApiRequestToKernelQueue(req);
-			ApiResponse res = this.readResponseFromQueue();
-			if (res.getResourceId() != this.id || !res.getMethod().equals(method) ) {
-				System.err.println("Api Result dispatchted to the wrong place");
-				return null;
-			} else{
-				return res.getReturnValue();
-			}
+	protected Object apiRequestSync(String method, List<Object> args) {
+		Object retMonitor = new Object();
+		Queue<ApiResponse> retQueue = new ConcurrentLinkedQueue<ApiResponse>();
+		QueueWriter<ApiResponse> retWriter = new QueueWriter<ApiResponse>(retMonitor, retQueue);
+		QueueReader<ApiResponse> retReader = new QueueReader<ApiResponse>(retMonitor, retQueue);
+		ApiRequest req = new ApiRequest(this.id, method, this.app, args,
+				retWriter);
+		this.writeApiRequestToKernelQueue(req);
+		
+		retReader.waits();
+		ApiResponse ret = retReader.read();
+		
+		if (ret == null) {
+			// waits timeout
+			return null;
+		}
+		else if (ret.getObjectId() != this.id || !ret.getMethod().equals(method)) {
+			//System.err.println("Api Result dispatchted to the wrong place");
+			return null;
+		} else {
+			return ret.getReturnValue();
 		}
 	}
 
 	private void writeApiRequestToKernelQueue(ApiRequest req) {
-		// TODO
-	}
-	
-	public void writeReponseToProxyQueue(ApiResponse res) {
-		response_queue.add(res);
-		synchronized (inboundMonitor) {
-			inboundMonitor.notifyAll();
-		}
-	}
-
-	/**
-	 * This function is waiting on the response queue until it is not empty
-	 * 
-	 * @return Always return true
-	 */
-	private boolean waitResponseFromQueue() {
-		while (response_queue.isEmpty()) {
-			synchronized (inboundMonitor) {
-				try {
-					inboundMonitor.wait();
-				} catch (InterruptedException e) {
-					System.err.println("Read response from queue interrupted");
-					e.printStackTrace();
-				}
-			}
-		}
-		return true;
-	}
-
-	/**
-	 * This function will wait on the queue for a maximum of n seconds. If the
-	 * queue is ready for reading by that time, return the true, else return
-	 * false.
-	 * 
-	 * @param n
-	 *            Patience Time in seconds. 0 means no timeout, same as
-	 *            waitResponseFromQueue()
-	 * @return True if the queue is ready for read and false if timeout
-	 */
-	private boolean waitResponseFromQueue(int n) {
-
-		if (n == 0) {
-			return waitResponseFromQueue();
-		}
-
-		long start = System.currentTimeMillis();
-		while (response_queue.isEmpty()
-				&& System.currentTimeMillis() - start < n * 1000) {
-			synchronized (inboundMonitor) {
-				try {
-					inboundMonitor.wait(1000);
-				} catch (InterruptedException e) {
-					System.err.println("Read response from queue interrupted");
-					e.printStackTrace();
-				}
-			}
-		}
-		if (!response_queue.isEmpty()) {
-			return true;
-		} else {
-			return false;
-		}
-	}
-
-	/**
-	 * This blocking function will read from the response queue until successful
-	 * 
-	 * @return The API call response
-	 */
-	private ApiResponse readResponseFromQueue() {
-		this.waitResponseFromQueue();
-		return response_queue.poll();
+		kernelQueueWriter.write(req);
+		kernelQueueWriter.notifies();
 	}
 }

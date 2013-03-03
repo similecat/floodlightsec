@@ -16,6 +16,8 @@ import net.floodlightcontroller.core.module.FloodlightModuleException;
 import net.floodlightcontroller.core.module.IFloodlightModule;
 import net.floodlightcontroller.core.module.IFloodlightService;
 import net.floodlightcontroller.devicemanager.IDeviceListener;
+import net.floodlightcontroller.util.QueueReader;
+import net.floodlightcontroller.util.QueueWriter;
 
 import org.openflow.protocol.OFMessage;
 import org.openflow.protocol.OFType;
@@ -34,7 +36,7 @@ import chao.floodlightcontroller.safethread.message.OFMessageEvent;
  * module is referencing them. However, it can referencing the kernel space
  * components.
  * 
- * @author shichao
+ * @author shichao, Xitao Wen
  * 
  */
 public class FloodlightModuleRunnable implements Runnable, IOFMessageListener {
@@ -48,6 +50,9 @@ public class FloodlightModuleRunnable implements Runnable, IOFMessageListener {
 
 	private Object inboundMonitor;
 	private Object moduleMonitor;
+	
+	protected final QueueReader<OFEvent> eventQueueReader = null; // Event (or listener or callback) queue	
+	public final QueueWriter<OFEvent> eventQueueWriter = null;
 
 	/**
 	 * (1) Every AppThread will have a map of proxy service implementation in
@@ -77,11 +82,11 @@ public class FloodlightModuleRunnable implements Runnable, IOFMessageListener {
 	public FloodlightModuleRunnable(IFloodlightModule module) {
 		this.module = module;
 		virtualContext = new FloodlightModuleContext();
-		for (Class<? extends IFloodlightService> clazz : module
-				.getModuleDependencies()) {
-			virtualContext.addService(clazz,
-					ProxyServiceImplFactory.instanceServiceImpl(clazz, this));
-		}
+//		for (Class<? extends IFloodlightService> clazz : module
+//				.getModuleDependencies()) {
+//			virtualContext.addService(clazz,
+//					ProxyServiceImplFactory.instanceServiceImpl(clazz, this));
+//		}
 		event_queue = new ConcurrentLinkedQueue<OFEvent>();
 		inboundMonitor = new Object();
 		moduleMonitor = new Object();

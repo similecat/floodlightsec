@@ -1,13 +1,15 @@
 package chao.floodlightcontroller.safethread;
 
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.openflow.protocol.OFMessage;
 import org.openflow.protocol.OFType;
 import org.openflow.protocol.factory.BasicFactory;
+
+import chao.floodlightcontroller.safethread.message.ApiRequest;
 import net.floodlightcontroller.core.FloodlightContext;
 import net.floodlightcontroller.core.IFloodlightProviderService;
 import net.floodlightcontroller.core.IHAListener;
@@ -15,7 +17,7 @@ import net.floodlightcontroller.core.IInfoProvider;
 import net.floodlightcontroller.core.IOFMessageListener;
 import net.floodlightcontroller.core.IOFSwitch;
 import net.floodlightcontroller.core.IOFSwitchListener;
-import net.floodlightcontroller.core.module.IFloodlightModule;
+import net.floodlightcontroller.util.QueueWriter;
 
 /**
  * This is a proxy FloodlightProvider in the user space. Note that not every API
@@ -40,8 +42,8 @@ public class ProxyFloodlightProvider extends ProxyBase implements
 	// module.
 	// A map representing the catogery of listeners you are proxy of!
 
-	public ProxyFloodlightProvider(long id, FloodlightModuleRunnable thread) {
-		super(id, thread);
+	public ProxyFloodlightProvider(long id, FloodlightModuleRunnable app, QueueWriter<ApiRequest> qw) {
+		super(id, app, qw);
 	}
 
 	/**
@@ -54,19 +56,25 @@ public class ProxyFloodlightProvider extends ProxyBase implements
 	 */
 	@Override
 	public void addOFMessageListener(OFType type, IOFMessageListener listener) {
-		voidApiCall("addOFMessageListener", Arrays.asList(type,this.thread));
+		apiRequestAsync("addOFMessageListener", Arrays.asList(type,this.app));
 	}
 
 	@Override
 	public void removeOFMessageListener(OFType type, IOFMessageListener listener) {
-		voidApiCall("removeOFMessageListener", Arrays.asList(type, listener));
+		apiRequestAsync("removeOFMessageListener", Arrays.asList(type, listener));
 	}
 
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public Map<Long, IOFSwitch> getSwitches() {
-		Object r = fullApiCall("getSwitches", Arrays.asList());
-		return (Map<Long, IOFSwitch>) r;
+		Object r = apiRequestSync("getSwitches", Arrays.asList());
+		if (r == null || !(r instanceof Map<?, ?>)) {
+			return new HashMap<Long, IOFSwitch>();
+		}
+		else {
+			return (Map<Long, IOFSwitch>) r;
+		}
 	}
 
 	@Override
@@ -148,7 +156,7 @@ public class ProxyFloodlightProvider extends ProxyBase implements
 		/**
 		 * Now only do the original registration
 		 */
-		return thread.realContext.getServiceImpl(
+		return this.app.realContext.getServiceImpl(
 				IFloodlightProviderService.class).getOFMessageFactory();
 	}
 

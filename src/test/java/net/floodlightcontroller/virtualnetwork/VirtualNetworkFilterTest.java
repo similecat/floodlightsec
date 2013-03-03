@@ -128,7 +128,7 @@ public class VirtualNetworkFilterTest extends FloodlightTestCase {
                 OFMatch.OFPFW_NW_DST_ALL |
                 OFMatch.OFPFW_NW_TOS;
         sw1 = EasyMock.createNiceMock(IOFSwitch.class);
-        expect(sw1.getId()).andReturn(1L).anyTimes();
+        expect(sw1.getObjectId()).andReturn(1L).anyTimes();
         expect(sw1.getAttribute(IOFSwitch.PROP_FASTWILDCARDS)).andReturn((Integer)fastWildcards).anyTimes();
         expect(sw1.hasAttribute(IOFSwitch.PROP_SUPPORTS_OFPP_TABLE)).andReturn(true).anyTimes();
         replay(sw1);

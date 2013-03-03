@@ -4,15 +4,18 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
+import chao.floodlightcontroller.safethread.message.ApiRequest;
+
 import net.floodlightcontroller.linkdiscovery.ILinkDiscovery.LDUpdate;
 import net.floodlightcontroller.topology.ITopologyListener;
 import net.floodlightcontroller.topology.ITopologyService;
 import net.floodlightcontroller.topology.NodePortTuple;
+import net.floodlightcontroller.util.QueueWriter;
 
 public class ProxyTopologyManager extends ProxyBase implements ITopologyService {
 
-	protected ProxyTopologyManager(FloodlightModuleRunnable thread) {
-		super(thread);
+	protected ProxyTopologyManager(long id, FloodlightModuleRunnable app, QueueWriter<ApiRequest> qw) {
+		super(id, app, qw);
 	}
 
 	@Override

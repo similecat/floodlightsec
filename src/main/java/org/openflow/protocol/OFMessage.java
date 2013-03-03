@@ -273,7 +273,7 @@ public class OFMessage {
                 OFPacketOut pktOut = (OFPacketOut) msg;
                 sb.append("packet_out         [ ");
                 sb.append("Controller -> ");
-                sb.append(HexString.toHexString(sw.getId()));
+                sb.append(HexString.toHexString(sw.getObjectId()));
                 sb.append(" ]");
 
                 sb.append("\nin_port: ");
@@ -290,7 +290,7 @@ public class OFMessage {
                 OFFlowMod fm = (OFFlowMod) msg;
                 sb.append("flow_mod           [ ");
                 sb.append("Controller -> ");
-                sb.append(HexString.toHexString(sw.getId()));
+                sb.append(HexString.toHexString(sw.getObjectId()));
                 sb.append(" ]");
 
                 // If the conext is not set by floodlight, then ignore.

@@ -159,7 +159,7 @@ public class ControllerTest extends FloodlightTestCase {
     protected void setupSwitchForAddSwitch(IOFSwitch sw, long dpid) {
         String dpidString = HexString.toHexString(dpid);
                 
-        expect(sw.getId()).andReturn(dpid).anyTimes();
+        expect(sw.getObjectId()).andReturn(dpid).anyTimes();
         expect(sw.getStringId()).andReturn(dpidString).anyTimes();
         expect(sw.getConnectedSince()).andReturn(new Date());
         Channel channel = createMock(Channel.class);
@@ -402,7 +402,7 @@ public class ControllerTest extends FloodlightTestCase {
 
         // Creating mock switch to which we will send packet out and 
         IOFSwitch sw = createMock(IOFSwitch.class);
-        expect(sw.getId()).andReturn(new Long(0));
+        expect(sw.getObjectId()).andReturn(new Long(0));
 
         // Mock Packet-in   
         IPacket testPacket = new Ethernet()
@@ -498,7 +498,7 @@ public class ControllerTest extends FloodlightTestCase {
         expect(channel.close()).andReturn(null);
 
         IOFSwitch newsw = createMock(IOFSwitch.class);
-        expect(newsw.getId()).andReturn(0L).anyTimes();
+        expect(newsw.getObjectId()).andReturn(0L).anyTimes();
         expect(newsw.getStringId()).andReturn("00:00:00:00:00:00:00").anyTimes();
         expect(newsw.getConnectedSince()).andReturn(new Date());
         Channel channel2 = createMock(Channel.class);
@@ -848,7 +848,7 @@ public class ControllerTest extends FloodlightTestCase {
         chdlr.sw = createMock(OFSwitchImpl.class);
         
         // Switch is active 
-        expect(chdlr.sw.getId()).andReturn(0L).anyTimes();
+        expect(chdlr.sw.getObjectId()).andReturn(0L).anyTimes();
         expect(chdlr.sw.getStringId()).andReturn("00:00:00:00:00:00:00:00")
                     .anyTimes();
         chdlr.sw.cancelAllStatisticsReplies();
@@ -864,7 +864,7 @@ public class ControllerTest extends FloodlightTestCase {
         
         // Switch is connected but not active
         reset(chdlr.sw);
-        expect(chdlr.sw.getId()).andReturn(0L).anyTimes();
+        expect(chdlr.sw.getObjectId()).andReturn(0L).anyTimes();
         chdlr.sw.setConnected(false);
         replay(chdlr.sw);
         chdlr.channelDisconnected(null, null);
@@ -1111,7 +1111,7 @@ public class ControllerTest extends FloodlightTestCase {
                                        OFRoleReplyVendorData.NX_ROLE_SLAVE);
         
         chdlr.sw.deliverRoleReply(xid, Role.SLAVE);
-        expect(chdlr.sw.getId()).andReturn(1L).anyTimes();
+        expect(chdlr.sw.getObjectId()).andReturn(1L).anyTimes();
         expect(chdlr.sw.getStringId()).andReturn("00:00:00:00:00:00:00:01")
                     .anyTimes();
         expect(chdlr.sw.isActive()).andReturn(false);
@@ -1135,7 +1135,7 @@ public class ControllerTest extends FloodlightTestCase {
                                        OFRoleReplyVendorData.NX_ROLE_MASTER);
         
         chdlr.sw.deliverRoleReply(xid, Role.MASTER);
-        expect(chdlr.sw.getId()).andReturn(1L).anyTimes();
+        expect(chdlr.sw.getObjectId()).andReturn(1L).anyTimes();
         expect(chdlr.sw.getStringId()).andReturn("00:00:00:00:00:00:00:01")
                     .anyTimes();
         expect(chdlr.sw.isActive()).andReturn(true);
@@ -1159,7 +1159,7 @@ public class ControllerTest extends FloodlightTestCase {
                                        OFRoleReplyVendorData.NX_ROLE_SLAVE);
         
         chdlr.sw.deliverRoleReply(xid, Role.SLAVE);
-        expect(chdlr.sw.getId()).andReturn(1L).anyTimes();
+        expect(chdlr.sw.getObjectId()).andReturn(1L).anyTimes();
         expect(chdlr.sw.getStringId()).andReturn("00:00:00:00:00:00:00:01")
                     .anyTimes();
         controller.activeSwitches.put(1L, chdlr.sw);
@@ -1185,9 +1185,9 @@ public class ControllerTest extends FloodlightTestCase {
     public void testRemoveActiveSwitch() {
         IOFSwitch sw = EasyMock.createNiceMock(IOFSwitch.class);
         boolean exceptionThrown = false;
-        expect(sw.getId()).andReturn(1L).anyTimes();
+        expect(sw.getObjectId()).andReturn(1L).anyTimes();
         replay(sw);
-        getController().activeSwitches.put(sw.getId(), sw);
+        getController().activeSwitches.put(sw.getObjectId(), sw);
         try {
             getController().getSwitches().remove(1L);
         } catch (UnsupportedOperationException e) {

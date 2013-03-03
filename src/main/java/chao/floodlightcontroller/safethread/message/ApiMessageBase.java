@@ -1,21 +1,27 @@
 package chao.floodlightcontroller.safethread.message;
 
-public class ApiMessageBase {
+import chao.floodlightcontroller.safethread.FloodlightModuleRunnable;
 
+public abstract class ApiMessageBase {
 	private final String method;
-	private final long id;
+	private final long objectId;
+	private final FloodlightModuleRunnable app;
 
-	public ApiMessageBase(long id, String method) {
+	public ApiMessageBase(long id, String method, FloodlightModuleRunnable app) {
 		this.method = method;
-		this.id = id;
+		this.objectId = id;
+		this.app = app;
 	}
 
 	public String getMethod() {
 		return method;
 	}
 	
-	public long getResourceId(){
-		return this.id;
+	public long getObjectId(){
+		return objectId;
 	}
-
+	
+	public FloodlightModuleRunnable getCaller() {
+		return app;
+	}
 }

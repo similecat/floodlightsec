@@ -1,12 +1,14 @@
 package chao.floodlightcontroller.safethread;
 
+import chao.floodlightcontroller.safethread.message.ApiRequest;
 import net.floodlightcontroller.routing.IRoutingService;
 import net.floodlightcontroller.routing.Route;
+import net.floodlightcontroller.util.QueueWriter;
 
 public class ProxyRoutingEngine extends ProxyBase implements IRoutingService{
 
-	protected ProxyRoutingEngine(FloodlightModuleRunnable thread) {
-		super(thread);
+	protected ProxyRoutingEngine(long id, FloodlightModuleRunnable app, QueueWriter<ApiRequest> qw) {
+		super(id, app, qw);
 	}
 
 	@Override

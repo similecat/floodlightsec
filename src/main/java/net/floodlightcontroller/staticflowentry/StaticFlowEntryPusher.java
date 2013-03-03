@@ -490,7 +490,7 @@ public class StaticFlowEntryPusher
             sw.flush();
         } catch (IOException e) {
             log.error("Tried to write OFFlowMod to {} but failed: {}", 
-                    HexString.toHexString(sw.getId()), e.getMessage());
+                    HexString.toHexString(sw.getObjectId()), e.getMessage());
         }
     }
 

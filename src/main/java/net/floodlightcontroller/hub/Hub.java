@@ -17,20 +17,15 @@
 
 package net.floodlightcontroller.hub;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 import net.floodlightcontroller.core.FloodlightContext;
 import net.floodlightcontroller.core.IFloodlightProviderService;
 import net.floodlightcontroller.core.IOFMessageListener;
 import net.floodlightcontroller.core.IOFSwitch;
-import net.floodlightcontroller.core.internal.OFSwitchForApp;
 import net.floodlightcontroller.core.module.FloodlightModuleContext;
 import net.floodlightcontroller.core.module.FloodlightModuleException;
 import net.floodlightcontroller.core.module.IFloodlightModule;
@@ -92,13 +87,13 @@ public class Hub implements IFloodlightModule, IOFMessageListener {
 			po.setLength(U16.t(OFPacketOut.MINIMUM_LENGTH
 					+ po.getActionsLength()));
 		}
-		try {
-			((OFSwitchForApp) sw).mappingSW.write(po, cntx);
-			// Never ever forget to flush
-			((OFSwitchForApp) sw).mappingSW.flush();
-		} catch (IOException e) {
-			log.error("Failure writing PacketOut", e);
-		}
+//		try {
+//			((OFSwitchForApp) sw).mappingSW.write(po, cntx);
+//			// Never ever forget to flush
+//			((OFSwitchForApp) sw).mappingSW.flush();
+//		} catch (IOException e) {
+//			log.error("Failure writing PacketOut", e);
+//		}
 
 		return Command.CONTINUE;
 	}

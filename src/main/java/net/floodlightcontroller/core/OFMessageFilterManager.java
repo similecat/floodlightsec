@@ -417,7 +417,7 @@ public class OFMessageFilterManager
         switch (msg.getType()) {
             case PACKET_IN:
                 OFPacketIn pktIn = (OFPacketIn)msg;
-                packet.setSwPortTuple(new SwitchPortTuple(sw.getId(), 
+                packet.setSwPortTuple(new SwitchPortTuple(sw.getObjectId(), 
                                                           pktIn.getInPort()));
                 bb = ChannelBuffers.buffer(pktIn.getLength());
                 pktIn.writeTo(bb);
@@ -425,7 +425,7 @@ public class OFMessageFilterManager
                 break;
             case PACKET_OUT:
                 OFPacketOut pktOut = (OFPacketOut)msg;
-                packet.setSwPortTuple(new SwitchPortTuple(sw.getId(), 
+                packet.setSwPortTuple(new SwitchPortTuple(sw.getObjectId(), 
                                                           pktOut.getInPort()));
                 bb = ChannelBuffers.buffer(pktOut.getLength());
                 pktOut.writeTo(bb);
@@ -433,7 +433,7 @@ public class OFMessageFilterManager
                 break;
             case FLOW_MOD:
                 OFFlowMod offlowMod = (OFFlowMod)msg;
-                packet.setSwPortTuple(new SwitchPortTuple(sw.getId(), 
+                packet.setSwPortTuple(new SwitchPortTuple(sw.getObjectId(), 
                                                           offlowMod.
                                                           getOutPort()));
                 bb = ChannelBuffers.buffer(offlowMod.getLength());
@@ -441,7 +441,7 @@ public class OFMessageFilterManager
                 packet.setData(OFMessage.getData(sw, msg, cntx));
                 break;
             default:
-                packet.setSwPortTuple(new SwitchPortTuple(sw.getId(), 
+                packet.setSwPortTuple(new SwitchPortTuple(sw.getObjectId(), 
                                                           (short)0));
                 String strData = "Unknown packet";
                 packet.setData(strData.getBytes());
