@@ -9,7 +9,7 @@ public class ServiceImplApiRequest extends ApiRequest {
 	private Class<? extends IFloodlightService> caller;
 
 	public static ServiceImplApiRequest create(FloodlightModuleRunnable mr,
-			Class<? extends IFloodlightService> service, Method method,
+			Class<? extends IFloodlightService> service, String method,
 			List<Object> args) {
 		ServiceImplApiRequest req = new ServiceImplApiRequest();
 		req.setModuleRunnable(mr);

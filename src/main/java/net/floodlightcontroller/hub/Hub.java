@@ -50,14 +50,11 @@ import org.slf4j.LoggerFactory;
  *
  * @author David Erickson (daviderickson@cs.stanford.edu) - 04/04/10
  */
-public class Hub implements IFloodlightModule, IOFMessageListener, Runnable {
+public class Hub implements IFloodlightModule, IOFMessageListener {
     protected static Logger log = LoggerFactory.getLogger(Hub.class);
 
     protected IFloodlightProviderService floodlightProvider;
     
-    public static Object packetInMonitor;
-	public static Queue<List<Object>> eventQueue;
-
     /**
      * @param floodlightProvider the floodlightProvider to set
      */
@@ -146,31 +143,5 @@ public class Hub implements IFloodlightModule, IOFMessageListener, Runnable {
     @Override
     public void startUp(FloodlightModuleContext context) {
         floodlightProvider.addOFMessageListener(OFType.PACKET_IN, this);
-        new Thread(this).start();
-    }
-    
-    @Override
-    public void run() {
-		packetInMonitor = new Object();
-		eventQueue = new ConcurrentLinkedQueue<List<Object>>();
-		while(true) {
-			synchronized(packetInMonitor){
-				try {
-					packetInMonitor.wait();
-				} catch (InterruptedException e) {
-					log.debug("Thread interrupted.");
-					return;
-				}
-			}
-
-			List<Object> event = eventQueue.poll();
-			while (event!=null) {
-				IOFSwitch sw = (IOFSwitch)event.get(0);
-				OFMessage msg = (OFMessage)event.get(1);
-				FloodlightContext cntx = (FloodlightContext)event.get(2);
-				this.receive(sw, msg, cntx);
-				event = eventQueue.poll();
-			}
-		}    	
     }
 }

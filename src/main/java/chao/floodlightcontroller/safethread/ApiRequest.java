@@ -8,7 +8,7 @@ import net.floodlightcontroller.core.module.IFloodlightService;
 
 public class ApiRequest {
 	private FloodlightModuleRunnable thread;
-	private Method method;
+	private String method;
 	private List<Object> args;
 	
 	public FloodlightModuleRunnable getModuleRunnable() {
@@ -19,11 +19,11 @@ public class ApiRequest {
 		this.thread = thread;
 	}
 
-	public Method getMethod() {
+	public String getMethod() {
 		return method;
 	}
 
-	public void setMethod(Method method) {
+	public void setMethod(String method) {
 		this.method = method;
 	}
 

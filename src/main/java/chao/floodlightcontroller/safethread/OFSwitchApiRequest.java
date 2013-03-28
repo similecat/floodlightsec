@@ -8,7 +8,7 @@ public class OFSwitchApiRequest extends ApiRequest{
 	private long id;
 	
 	public static OFSwitchApiRequest create(FloodlightModuleRunnable mr,
-			long swId, Method method,
+			long swId, String method,
 			List<Object> args) {
 		OFSwitchApiRequest req = new OFSwitchApiRequest();
 		req.setModuleRunnable(mr);
