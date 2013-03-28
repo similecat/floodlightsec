@@ -26,6 +26,8 @@ import net.floodlightcontroller.core.annotations.LogMessageDocs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import chao.floodlightcontroller.safethread.FloodlightModuleRunnable;
+
 /**
  * Finds all Floodlight modules in the class path and loads/starts them.
  * @author alexreimers
@@ -300,8 +302,7 @@ public class FloodlightModuleLoader {
         
         floodlightModuleContext.setModuleSet(moduleSet);
         parseConfigParameters(prop);
-        initModules(moduleSet);
-        startupModules(moduleSet);
+        initStartupModules(moduleSet);
         
         return floodlightModuleContext;
 	}
@@ -399,6 +400,48 @@ public class FloodlightModuleLoader {
         }
     }
     
+    protected void initStartupModules(Collection<IFloodlightModule> moduleSet) throws FloodlightModuleException{
+    	for (IFloodlightModule module : moduleSet) {            
+            // Get the module's service instance(s)
+            Map<Class<? extends IFloodlightService>, 
+                IFloodlightService> simpls = module.getServiceImpls();
+
+            // add its services to the context
+            if (simpls != null) {
+                for (Entry<Class<? extends IFloodlightService>, 
+                        IFloodlightService> s : simpls.entrySet()) {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Setting " + s.getValue() + 
+                                     "  as provider for " + 
+                                     s.getKey().getCanonicalName());
+                    }
+                    if (floodlightModuleContext.getServiceImpl(s.getKey()) == null) {
+                        floodlightModuleContext.addService(s.getKey(),
+                                                           s.getValue());
+                    } else {
+                        throw new FloodlightModuleException("Cannot set "
+                                                            + s.getValue()
+                                                            + " as the provider for "
+                                                            + s.getKey().getCanonicalName()
+                                                            + " because "
+                                                            + floodlightModuleContext.getServiceImpl(s.getKey())
+                                                            + " already provides it");
+                    }
+                }
+            }
+        }
+        
+        for (IFloodlightModule module : moduleSet) {
+            // init the module
+            if (logger.isDebugEnabled()) {
+                logger.debug("Initializing " + 
+                             module.getClass().getCanonicalName());
+            }
+            FloodlightModuleRunnable fmr = new FloodlightModuleRunnable(module);
+            fmr.initModule();
+            fmr.startModule();
+        }
+    }
     /**
      * Parses configuration parameters for each module
      * @param prop The properties file to use
