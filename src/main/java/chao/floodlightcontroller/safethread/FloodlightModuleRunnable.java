@@ -31,7 +31,7 @@ import org.openflow.protocol.OFType;
  */
 public class FloodlightModuleRunnable implements Runnable, IOFMessageListener {
 	private final IFloodlightModule module;
-	//TODO Field to be removed
+	// TODO Field to be removed
 	public FloodlightModuleContext realContext;
 	private final FloodlightModuleContext virtualContext;
 
@@ -39,7 +39,7 @@ public class FloodlightModuleRunnable implements Runnable, IOFMessageListener {
 	private Queue<ApiResponse> response_queue;
 	private Queue<OFMessageInfo> ofm_queue;
 	private Map<OFType, List<IOFMessageListener>> map;
-	
+
 	private Object apiResponseMonitor;
 	private Object ofMessageMonitor;
 
@@ -83,13 +83,12 @@ public class FloodlightModuleRunnable implements Runnable, IOFMessageListener {
 		ofMessageMonitor = new Object();
 	}
 
-	public IFloodlightService getProxyServiceImpl(
-			Class<? extends IFloodlightService> service) {
-		return virtualContext.getServiceImpl(service);
-	}
-
-	public IFloodlightModule getModule() {
+	private IFloodlightModule getModule() {
 		return module;
+	}
+	
+	private String getModuleName(){
+		return module.getClass().getCanonicalName();
 	}
 
 	/**
@@ -104,12 +103,13 @@ public class FloodlightModuleRunnable implements Runnable, IOFMessageListener {
 			e.printStackTrace();
 		}
 	}
-	
+
 	/**
 	 * To be deprecated
+	 * 
 	 * @param realContext
 	 */
-	public void initModule(FloodlightModuleContext realContext){
+	public void initModule(FloodlightModuleContext realContext) {
 		this.realContext = realContext;
 		initModule();
 	}
@@ -286,37 +286,39 @@ public class FloodlightModuleRunnable implements Runnable, IOFMessageListener {
 		}
 	}
 
-	public void writeOFMeesgeToQueue(OFMessageInfo info){
+	public void writeOFMeesgeToQueue(OFMessageInfo info) {
 		ofm_queue.add(info);
 		synchronized (ofMessageMonitor) {
 			ofMessageMonitor.notifyAll();
 		}
 	}
-	
+
 	/**
 	 * A dangerous method, called only from proxy service implementations
+	 * 
 	 * @param type
 	 * @param listener
 	 */
-	public void addOFListener(OFType type, IOFMessageListener listener){
-		if(map.get(type) == null){
+	public void addOFListener(OFType type, IOFMessageListener listener) {
+		if (map.get(type) == null) {
 			map.put(type, new ArrayList<IOFMessageListener>());
 		}
 		map.get(type).add(listener);
 	}
-	
+
 	@Override
 	public void run() {
-		new Thread(new OFMessageReader()).start();
-		new Thread(new ApiResponseReader()).start();
+		String name = this.getModuleName();
+		new Thread(new OFMessageReader(), name + "-OFMeesageReader").start();
+		new Thread(new ApiResponseReader(), name + "-ApiResponseReader").start();
 	}
 
 	@Override
 	public String getName() {
 		// The name of the module
-		if(module instanceof IOFMessageListener){
+		if (module instanceof IOFMessageListener) {
 			// I robbed your name and register it to myself LOL !!!
-			return ((IOFMessageListener)module).getName();
+			return ((IOFMessageListener) module).getName();
 		}
 		return null;
 	}
@@ -353,6 +355,7 @@ public class FloodlightModuleRunnable implements Runnable, IOFMessageListener {
 
 			while (true) {
 				OFMessageInfo info = readOFMessageFromQueue();
+				System.out.println("Pop up checksum " + info.hashCode());
 				IOFSwitch sw = info.getOFSwitch();
 				OFMessage ofm = info.getOFMessage();
 				FloodlightContext cntx = info.getFloodlightContext();

@@ -1250,15 +1250,19 @@ public class Controller implements IFloodlightProviderService,
 						}
 					}
 
+					// Chao changed here: listener is registered as
+					// FloodlightModuleRunnable
 					if (listener instanceof FloodlightModuleRunnable) {
 						FloodlightModuleRunnable mr = (FloodlightModuleRunnable) listener;
-						
+
 						OFMessageInfo info = new OFMessageInfo();
-						info.setOFSwitch(new OFSwitchForApp((OFSwitchImpl) sw));
+						info.setOFSwitch(new OFSwitchForApp((OFSwitchImpl)sw));
 						info.setOFMessage(m);
 						info.setFloodlightContext(bc);
 						mr.writeOFMeesgeToQueue(info);
-						
+						System.out.println("Before Insertion checksum "
+								+ info.hashCode());
+
 						cmd = Command.CONTINUE;
 
 						// try syncronized waitLock later?

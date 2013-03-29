@@ -43,4 +43,14 @@ public class OFMessageInfo {
 	public void setFloodlightContext(FloodlightContext cntx) {
 		this.cntx = cntx;
 	}
+	
+	@Override
+	public int hashCode(){
+		int prime = 107;
+		int result = 1;
+		result = prime * result + msg.hashCode();
+		result = prime * result + sw.hashCode();
+		result = prime * result + cntx.hashCode();
+		return result;
+	}
 }
