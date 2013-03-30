@@ -1,8 +1,6 @@
 package chao.floodlightcontroller.safethread;
 
-import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -56,16 +54,17 @@ public class ProxyFloodlightProvider extends ProxyBase implements
 	 */
 	@Override
 	public void addOFMessageListener(OFType type, IOFMessageListener listener) {
-		/*
-		 * String method = "addOFMessageListener"; List<Object> args = new
-		 * ArrayList<Object>(); args.add(type); args.add(this.pThread);
-		 * 
-		 * ServiceImplApiRequest req = ServiceImplApiRequest.create(pThread,
-		 * IFloodlightProviderService.class, method, args);
-		 * 
-		 * pThread.writeRequestToQueue(req);
-		 */
 
+//		String method = "addOFMessageListener";
+//		List<Object> args = new ArrayList<Object>();
+//		args.add(type);
+//		args.add(this.pThread);
+//
+//		ServiceImplApiRequest req = new ServiceImplApiRequest(pThread,
+//				IFloodlightProviderService.class, method, args);
+//
+//		pThread.writeRequestToQueue(req);
+		
 		/**
 		 * Now only do the original registration
 		 */
@@ -75,27 +74,45 @@ public class ProxyFloodlightProvider extends ProxyBase implements
 
 	@Override
 	public void removeOFMessageListener(OFType type, IOFMessageListener listener) {
-		// TODO Auto-generated method stub
+		String method = "removeOFMessageListener";
+		List<Object> args = new ArrayList<Object>();
+		args.add(type);
+		args.add(this.pThread);
+
+		ServiceImplApiRequest req = new ServiceImplApiRequest(pThread,
+				IFloodlightProviderService.class, method, args);
+
+		pThread.writeRequestToQueue(req);
 	}
 
 	@Override
 	public Map<OFType, List<IOFMessageListener>> getListeners() {
-		// TODO Auto-generated method stub
-		return null;
+		String method = "getListeners";
+		List<Object> args = new ArrayList<Object>();
+
+		ServiceImplApiRequest req = new ServiceImplApiRequest(pThread,
+				IFloodlightProviderService.class, method, args);
+
+		pThread.writeRequestToQueue(req);
+		
+		ServiceImplApiResponse res = (ServiceImplApiResponse) this.pThread.readResponseFromQueue();
+		Map<OFType, List<IOFMessageListener>> value = (Map<OFType, List<IOFMessageListener>>) res.getReturnValue();
+		return value;
 	}
 
 	@Override
 	public Map<Long, IOFSwitch> getSwitches() {
-
 		String method = "getSwitches";
 		List<Object> args = new ArrayList<Object>();
-		ServiceImplApiRequest req = ServiceImplApiRequest.create(pThread,
+
+		ServiceImplApiRequest req = new ServiceImplApiRequest(pThread,
 				IFloodlightProviderService.class, method, args);
 
 		pThread.writeRequestToQueue(req);
-		pThread.readResponseFromQueue();
-		//TODO
-		return null;
+		
+		ServiceImplApiResponse res = (ServiceImplApiResponse) this.pThread.readResponseFromQueue();
+		Map<Long, IOFSwitch> value = (Map<Long, IOFSwitch>) res.getReturnValue();
+		return value;
 	}
 
 	@Override
@@ -174,8 +191,11 @@ public class ProxyFloodlightProvider extends ProxyBase implements
 
 	@Override
 	public BasicFactory getOFMessageFactory() {
-		// TODO Auto-generated method stub
-		return null;
+		/**
+		 * Now only do the original registration
+		 */
+		return pThread.realContext.getServiceImpl(
+				IFloodlightProviderService.class).getOFMessageFactory();
 	}
 
 	@Override

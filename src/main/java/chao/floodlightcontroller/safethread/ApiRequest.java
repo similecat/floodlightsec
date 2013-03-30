@@ -1,37 +1,21 @@
 package chao.floodlightcontroller.safethread;
 
-import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.List;
 
-import net.floodlightcontroller.core.module.IFloodlightService;
-
-public class ApiRequest {
-	private FloodlightModuleRunnable thread;
-	private String method;
+public class ApiRequest extends ApiMessageBase{
+	
 	private List<Object> args;
 	
-	public FloodlightModuleRunnable getModuleRunnable() {
-		return thread;
+	public ApiRequest(FloodlightModuleRunnable thread, String method, List<Object> args){
+		super(thread, method);
+		this.args = args;
 	}
-
-	public void setModuleRunnable(FloodlightModuleRunnable thread) {
-		this.thread = thread;
-	}
-
-	public String getMethod() {
-		return method;
-	}
-
-	public void setMethod(String method) {
-		this.method = method;
-	}
-
+	
 	public List<Object> getArgs() {
 		return args;
 	}
 
-	public void setArgs(List<Object> args2) {
-		this.args = args2;
+	public void setArgs(List<Object> args) {
+		this.args = args;
 	}
 }

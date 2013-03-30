@@ -308,13 +308,6 @@ public class ProxySwitch extends ProxyBase implements IOFSwitch {
 
 	}
 
-	public static IOFSwitch image(IOFSwitch sw, FloodlightModuleRunnable thread) {
-		if (sw instanceof ProxySwitch) {
-			return sw;
-		} else {
-			ProxySwitch psw = new ProxySwitch(sw.getId(), thread);
-			return psw;
-		}
-	}
+
 
 }

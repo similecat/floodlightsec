@@ -1,6 +1,6 @@
 package chao.floodlightcontroller.safethread;
 
-public class ProxyBase {
+public abstract class ProxyBase {
 
 	protected FloodlightModuleRunnable pThread;
 
@@ -17,5 +17,7 @@ public class ProxyBase {
 		pThread = thread;
 		return true;
 	}
+	
+	
 
 }

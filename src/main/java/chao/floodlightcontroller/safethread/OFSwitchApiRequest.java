@@ -1,30 +1,23 @@
 package chao.floodlightcontroller.safethread;
 
-import java.lang.reflect.Method;
 import java.util.List;
 
+public class OFSwitchApiRequest extends ApiRequest {
 
-public class OFSwitchApiRequest extends ApiRequest{
 	private long id;
-	
-	public static OFSwitchApiRequest create(FloodlightModuleRunnable mr,
-			long swId, String method,
-			List<Object> args) {
-		OFSwitchApiRequest req = new OFSwitchApiRequest();
-		req.setModuleRunnable(mr);
-		req.setMethod(method);
-		req.setArgs(args);
-		req.setSwitchId(swId);
-		return req;
+
+	public OFSwitchApiRequest(FloodlightModuleRunnable mr, long swId,
+			String method, List<Object> args) {
+		super(mr, method, args);
+		this.id = swId;
 	}
 
 	public long getSwitchId() {
 		return id;
 	}
 
-	private void setSwitchId(long id) {
+	public void setSwitchId(long id) {
 		this.id = id;
 	}
 
-	
 }

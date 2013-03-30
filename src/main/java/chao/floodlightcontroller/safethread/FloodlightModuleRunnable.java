@@ -35,13 +35,12 @@ public class FloodlightModuleRunnable implements Runnable, IOFMessageListener {
 	public FloodlightModuleContext realContext;
 	private final FloodlightModuleContext virtualContext;
 
-	private Queue<ApiRequest> request_queue;// On the kernel side
 	private Queue<ApiResponse> response_queue;
 	private Queue<OFMessageInfo> ofm_queue;
 	private Map<OFType, List<IOFMessageListener>> map;
 
-	private Object apiResponseMonitor;
-	private Object ofMessageMonitor;
+	private Object inboundMonitor;
+	private Object moduleMonitor;
 
 	/**
 	 * (1) Every AppThread will have a map of proxy service implementation in
@@ -76,18 +75,18 @@ public class FloodlightModuleRunnable implements Runnable, IOFMessageListener {
 			virtualContext.addService(clazz,
 					ProxyServiceImplFactory.instance(clazz, this));
 		}
-		request_queue = new ConcurrentLinkedQueue<ApiRequest>();
 		response_queue = new ConcurrentLinkedQueue<ApiResponse>();
 		ofm_queue = new ConcurrentLinkedQueue<OFMessageInfo>();
-		apiResponseMonitor = new Object();
-		ofMessageMonitor = new Object();
+		inboundMonitor = new Object();
+		moduleMonitor = new Object();
 	}
 
-	private IFloodlightModule getModule() {
-		return module;
-	}
-	
-	private String getModuleName(){
+	/**
+	 * Avoid leaking the name of the module running on top of it
+	 * 
+	 * @return Name of the module running on top
+	 */
+	private String getModuleName() {
 		return module.getClass().getCanonicalName();
 	}
 
@@ -105,21 +104,33 @@ public class FloodlightModuleRunnable implements Runnable, IOFMessageListener {
 	}
 
 	/**
-	 * To be deprecated
+	 * A temporary method to allow the AppThread to directly refer to the kernel
+	 * components
 	 * 
+	 * @deprecated
 	 * @param realContext
+	 *            real FloodlightModuleContext
 	 */
 	public void initModule(FloodlightModuleContext realContext) {
 		this.realContext = realContext;
 		initModule();
 	}
 
+	/**
+	 * Start up a module
+	 */
 	public void startModule() {
 		module.startUp(virtualContext);
 	}
 
+	/**
+	 * Write the API request to the queue of the kernel thread
+	 * 
+	 * @param req
+	 *            API request
+	 */
 	public void writeRequestToQueue(ApiRequest req) {
-		request_queue.add(req);
+		// TODO
 	}
 
 	/**
@@ -129,9 +140,9 @@ public class FloodlightModuleRunnable implements Runnable, IOFMessageListener {
 	 */
 	public boolean waitResponseFromQueue() {
 		while (response_queue.isEmpty()) {
-			synchronized (apiResponseMonitor) {
+			synchronized (inboundMonitor) {
 				try {
-					apiResponseMonitor.wait();
+					inboundMonitor.wait();
 				} catch (InterruptedException e) {
 					System.err.println("Read response from queue interrupted");
 					e.printStackTrace();
@@ -160,9 +171,9 @@ public class FloodlightModuleRunnable implements Runnable, IOFMessageListener {
 		long start = System.currentTimeMillis();
 		while (response_queue.isEmpty()
 				&& System.currentTimeMillis() - start < n * 1000) {
-			synchronized (apiResponseMonitor) {
+			synchronized (inboundMonitor) {
 				try {
-					apiResponseMonitor.wait(1000);
+					inboundMonitor.wait(1000);
 				} catch (InterruptedException e) {
 					System.err.println("Read response from queue interrupted");
 					e.printStackTrace();
@@ -180,7 +191,7 @@ public class FloodlightModuleRunnable implements Runnable, IOFMessageListener {
 	 * This non-blocking function will read from response queue, and return null
 	 * if the queue is empty
 	 * 
-	 * @return
+	 * @return The API call response
 	 */
 	public ApiResponse peekResponseFromQueue() {
 		if (response_queue.isEmpty()) {
@@ -215,17 +226,28 @@ public class FloodlightModuleRunnable implements Runnable, IOFMessageListener {
 		}
 	}
 
-	public void notifyResponseQueue() {
-		synchronized (apiResponseMonitor) {
-			apiResponseMonitor.notifyAll();
+	/**
+	 * Write the response to the queue of the AppThread
+	 * 
+	 * @param res
+	 */
+	public void writeReponseToQueue(ApiResponse res) {
+		response_queue.add(res);
+		synchronized (inboundMonitor) {
+			inboundMonitor.notifyAll();
 		}
 	}
 
+	/**
+	 * This function is waiting on the OFMessage queue until it is not empty
+	 * 
+	 * @return Always return true
+	 */
 	public boolean waitOFMessageFromQueue() {
 		while (ofm_queue.isEmpty()) {
-			synchronized (ofMessageMonitor) {
+			synchronized (inboundMonitor) {
 				try {
-					ofMessageMonitor.wait();
+					inboundMonitor.wait();
 				} catch (InterruptedException e) {
 					System.err.println("Read OFMessage from queue interrupted");
 					e.printStackTrace();
@@ -235,6 +257,16 @@ public class FloodlightModuleRunnable implements Runnable, IOFMessageListener {
 		return true;
 	}
 
+	/**
+	 * This function will wait on the queue for a maximum of n seconds. If the
+	 * queue is ready for reading by that time, return the true, else return
+	 * false.
+	 * 
+	 * @param n
+	 *            Patience Time in seconds. 0 means no timeout, same as
+	 *            waitResponseFromQueue()
+	 * @return True if the queue is ready for read and false if timeout
+	 */
 	public boolean waitOFMessageFromQueue(int n) {
 
 		if (n == 0) {
@@ -244,9 +276,9 @@ public class FloodlightModuleRunnable implements Runnable, IOFMessageListener {
 		long start = System.currentTimeMillis();
 		while (ofm_queue.isEmpty()
 				&& System.currentTimeMillis() - start < n * 1000) {
-			synchronized (ofMessageMonitor) {
+			synchronized (inboundMonitor) {
 				try {
-					ofMessageMonitor.wait(1000);
+					inboundMonitor.wait(1000);
 				} catch (InterruptedException e) {
 					System.err.println("Read OFMessage from queue interrupted");
 					e.printStackTrace();
@@ -260,6 +292,12 @@ public class FloodlightModuleRunnable implements Runnable, IOFMessageListener {
 		}
 	}
 
+	/**
+	 * This non-blocking function will read from OFMessage queue, and return
+	 * null if the queue is empty
+	 * 
+	 * @return The OFMessage
+	 */
 	public OFMessageInfo peekOFMessageFromQueue() {
 		if (ofm_queue.isEmpty()) {
 			return null;
@@ -267,11 +305,25 @@ public class FloodlightModuleRunnable implements Runnable, IOFMessageListener {
 		return ofm_queue.poll();
 	}
 
+	/**
+	 * This blocking function will read from the OFMessage queue until
+	 * successful
+	 * 
+	 * @return The OFMessage
+	 */
 	public OFMessageInfo readOFMessageFromQueue() {
 		this.waitOFMessageFromQueue();
 		return ofm_queue.poll();
 	}
 
+	/**
+	 * This blocking function will read from the OFMessage queue until
+	 * successful or timeout
+	 * 
+	 * @param n
+	 *            Timeout value
+	 * @return The OFMessage
+	 */
 	public OFMessageInfo readOFMessageFromQueue(int n) {
 		if (waitOFMessageFromQueue(n)) {
 			return ofm_queue.poll();
@@ -280,16 +332,15 @@ public class FloodlightModuleRunnable implements Runnable, IOFMessageListener {
 		}
 	}
 
-	public void notifyOFMessageQueue() {
-		synchronized (ofMessageMonitor) {
-			ofMessageMonitor.notifyAll();
-		}
-	}
-
+	/**
+	 * Write a OFMessage to the queue of the AppThread
+	 * 
+	 * @param info
+	 */
 	public void writeOFMeesgeToQueue(OFMessageInfo info) {
 		ofm_queue.add(info);
-		synchronized (ofMessageMonitor) {
-			ofMessageMonitor.notifyAll();
+		synchronized (inboundMonitor) {
+			inboundMonitor.notifyAll();
 		}
 	}
 
@@ -308,9 +359,26 @@ public class FloodlightModuleRunnable implements Runnable, IOFMessageListener {
 
 	@Override
 	public void run() {
-		String name = this.getModuleName();
-		new Thread(new OFMessageReader(), name + "-OFMeesageReader").start();
-		new Thread(new ApiResponseReader(), name + "-ApiResponseReader").start();
+		// initialize the module
+		initModule();
+
+		// start up the module on the thread
+		startModule();
+
+		// if the module is an implementation of the IOFMessageListener, Run a
+		// loop of listening message
+		if (module instanceof IOFMessageListener) {
+			while (true) {
+				OFMessageInfo info = readOFMessageFromQueue();
+				System.out.println("Pop up checksum " + info.hashCode());
+				IOFSwitch sw = info.getOFSwitch();
+				OFMessage ofm = info.getOFMessage();
+				FloodlightContext cntx = info.getFloodlightContext();
+				synchronized (moduleMonitor) {
+					((IOFMessageListener) module).receive(sw, ofm, cntx);
+				}
+			}
+		}
 	}
 
 	@Override
@@ -345,37 +413,6 @@ public class FloodlightModuleRunnable implements Runnable, IOFMessageListener {
 					.println("Error, The module is not supposed to receive this OFMessage event");
 		}
 		return null;
-	}
-
-	private class OFMessageReader implements Runnable {
-
-		@Override
-		public void run() {
-			assert (module instanceof IOFMessageListener);
-
-			while (true) {
-				OFMessageInfo info = readOFMessageFromQueue();
-				System.out.println("Pop up checksum " + info.hashCode());
-				IOFSwitch sw = info.getOFSwitch();
-				OFMessage ofm = info.getOFMessage();
-				FloodlightContext cntx = info.getFloodlightContext();
-				((IOFMessageListener) module).receive(sw, ofm, cntx);
-			}
-
-		}
-
-	}
-
-	private class ApiResponseReader implements Runnable {
-
-		@Override
-		public void run() {
-			while (true) {
-				ApiResponse res = readResponseFromQueue();
-				// Handle the response
-			}
-		}
-
 	}
 
 }
