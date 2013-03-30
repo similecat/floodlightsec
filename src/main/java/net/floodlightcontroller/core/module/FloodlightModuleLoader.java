@@ -472,8 +472,6 @@ public class FloodlightModuleLoader {
 		for (IFloodlightModule module : moduleSet){
 			if(module instanceof Hub){
 				FloodlightModuleRunnable fmr = new FloodlightModuleRunnable(module);
-				fmr.initModule(floodlightModuleContext);
-				fmr.startModule();
 				new Thread(fmr).start();
 			}
 		}
