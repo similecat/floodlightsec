@@ -382,6 +382,9 @@ public class FloodlightModuleRunnable implements Runnable, IOFMessageListener {
 		}
 	}
 
+	/**
+	 * Register as a listener with the name from the module
+	 */
 	@Override
 	public String getName() {
 		// The name of the module
@@ -403,6 +406,9 @@ public class FloodlightModuleRunnable implements Runnable, IOFMessageListener {
 		return false;
 	}
 
+	/**
+	 * This receive function should never ever be called from the kernel thread
+	 */
 	@Override
 	public net.floodlightcontroller.core.IListener.Command receive(
 			IOFSwitch sw, OFMessage msg, FloodlightContext cntx) {

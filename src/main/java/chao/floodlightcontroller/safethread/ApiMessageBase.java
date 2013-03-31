@@ -2,11 +2,7 @@ package chao.floodlightcontroller.safethread;
 
 public class ApiMessageBase {
 
-	private String method;
-
-	public ApiMessageBase() {
-
-	}
+	private final String method;
 
 	public ApiMessageBase(String method) {
 		this.method = method;
@@ -14,10 +10,6 @@ public class ApiMessageBase {
 
 	public String getMethod() {
 		return method;
-	}
-
-	public void setMethod(String method) {
-		this.method = method;
 	}
 
 }

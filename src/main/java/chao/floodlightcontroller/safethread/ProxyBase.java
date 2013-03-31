@@ -1,23 +1,16 @@
 package chao.floodlightcontroller.safethread;
 
+/**
+ * The base function for all proxies. There is not get or set function to the member of pThread
+ * @author shichao
+ *
+ */
 public abstract class ProxyBase {
 
-	protected FloodlightModuleRunnable pThread;
+	protected final FloodlightModuleRunnable pThread;
 
 	protected ProxyBase(FloodlightModuleRunnable thread) {
 		this.pThread = thread;
 	}
-
-	// This method must be private to protect against the module operate on the AppThread
-	private FloodlightModuleRunnable getAppThread() {
-		return pThread;
-	}
-
-	private boolean setAppThread(FloodlightModuleRunnable thread) {
-		pThread = thread;
-		return true;
-	}
-	
-	
 
 }

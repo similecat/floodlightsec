@@ -2,10 +2,18 @@ package chao.floodlightcontroller.safethread;
 
 import net.floodlightcontroller.core.module.IFloodlightService;
 
+/**
+ * The standard class for inter-thread communication for API calls response in terms of
+ * service implementation
+ * 
+ * @author shichao
+ * 
+ */
+
 public class ServiceImplApiResponse extends ApiResponse {
 	
-	private FloodlightModuleRunnable thread;
-	private Class<? extends IFloodlightService> caller;
+	private final FloodlightModuleRunnable thread;
+	private final Class<? extends IFloodlightService> caller;
 	
 	public ServiceImplApiResponse(FloodlightModuleRunnable thread,
 			Class<? extends IFloodlightService> service, String method,
@@ -18,17 +26,9 @@ public class ServiceImplApiResponse extends ApiResponse {
 	public FloodlightModuleRunnable getModuleRunnable() {
 		return thread;
 	}
-
-	public void setModuleRunnable(FloodlightModuleRunnable thread) {
-		this.thread = thread;
-	}
 	
 	public Class<? extends IFloodlightService> getCaller() {
 		return caller;
-	}
-
-	public void setCaller(Class<? extends IFloodlightService> caller) {
-		this.caller = caller;
 	}
 
 }
