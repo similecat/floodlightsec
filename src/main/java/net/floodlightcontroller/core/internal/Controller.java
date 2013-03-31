@@ -1255,10 +1255,8 @@ public class Controller implements IFloodlightProviderService,
 					if (listener instanceof FloodlightModuleRunnable) {
 						FloodlightModuleRunnable mr = (FloodlightModuleRunnable) listener;
 
-						OFMessageInfo info = new OFMessageInfo();
-						info.setOFSwitch(new OFSwitchForApp((OFSwitchImpl)sw));
-						info.setOFMessage(m);
-						info.setFloodlightContext(bc);
+						OFMessageInfo info = new OFMessageInfo(m,
+								new OFSwitchForApp((OFSwitchImpl) sw), bc);
 						mr.writeOFMeesgeToQueue(info);
 						System.out.println("Before Insertion checksum "
 								+ info.hashCode());
