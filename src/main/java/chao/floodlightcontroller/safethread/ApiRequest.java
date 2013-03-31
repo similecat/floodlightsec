@@ -6,8 +6,8 @@ public class ApiRequest extends ApiMessageBase{
 	
 	private List<Object> args;
 	
-	public ApiRequest(FloodlightModuleRunnable thread, String method, List<Object> args){
-		super(thread, method);
+	public ApiRequest(String method, List<Object> args){
+		super(method);
 		this.args = args;
 	}
 	

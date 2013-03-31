@@ -1,15 +1,12 @@
 package chao.floodlightcontroller.safethread;
 
-import java.util.List;
-
 import net.floodlightcontroller.core.IOFSwitch;
 
-public class OFSwitchApiRequest extends ApiRequest {
-
+public class OFSwitchApiResponse extends ApiResponse {
 	private IOFSwitch sw;
 
-	public OFSwitchApiRequest(IOFSwitch sw, String method, List<Object> args) {
-		super(method, args);
+	public OFSwitchApiResponse(IOFSwitch sw, String method, Object returnValue) {
+		super(method, returnValue);
 		this.setOFSwitch(sw);
 	}
 
@@ -22,4 +19,5 @@ public class OFSwitchApiRequest extends ApiRequest {
 	}
 
 	
+
 }

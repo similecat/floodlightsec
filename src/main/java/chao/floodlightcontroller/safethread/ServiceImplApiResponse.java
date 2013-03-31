@@ -1,18 +1,16 @@
 package chao.floodlightcontroller.safethread;
 
-import java.util.List;
-
 import net.floodlightcontroller.core.module.IFloodlightService;
 
-public class ServiceImplApiRequest extends ApiRequest {
+public class ServiceImplApiResponse extends ApiResponse {
 	
-	private Class<? extends IFloodlightService> caller;
 	private FloodlightModuleRunnable thread;
+	private Class<? extends IFloodlightService> caller;
 	
-	public  ServiceImplApiRequest (FloodlightModuleRunnable thread,
+	public ServiceImplApiResponse(FloodlightModuleRunnable thread,
 			Class<? extends IFloodlightService> service, String method,
-			List<Object> args) {
-		super(method, args);
+			Object returnValue) {
+		super(method, returnValue);
 		this.thread = thread;
 		this.caller = service;
 	}
