@@ -7,7 +7,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.openflow.protocol.OFPacketOut;
 
-import chao.floodlightcontroller.safethread.ApiRequest;
+import chao.floodlightcontroller.safethread.message.ApiRequest;
 
 import net.floodlightcontroller.core.FloodlightContext;
 import net.floodlightcontroller.core.internal.OFSwitchForApp;

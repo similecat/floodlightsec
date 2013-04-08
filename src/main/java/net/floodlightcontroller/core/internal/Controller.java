@@ -132,13 +132,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import chao.floodlightcontroller.safethread.FloodlightModuleRunnable;
-import chao.floodlightcontroller.safethread.OFMessageInfo;
+import chao.floodlightcontroller.safethread.message.OFMessageEvent;
 
 /**
  * The main controller class. Handles all setup and network listeners
  */
 public class Controller implements IFloodlightProviderService,
 		IStorageSourceListener {
+
+	// Added by Chao
+	public Command returnCommand;
 
 	protected static Logger log = LoggerFactory.getLogger(Controller.class);
 
@@ -1250,26 +1253,28 @@ public class Controller implements IFloodlightProviderService,
 						}
 					}
 
-					// Chao changed here: listener is registered as
-					// FloodlightModuleRunnable
+					// Listener is registered as FloodlightModuleRunnable
 					if (listener instanceof FloodlightModuleRunnable) {
 						FloodlightModuleRunnable mr = (FloodlightModuleRunnable) listener;
 
-						OFMessageInfo info = new OFMessageInfo(m,
+						OFMessageEvent info = new OFMessageEvent((FloodlightModuleRunnable) listener, m,
 								new OFSwitchForApp((OFSwitchImpl) sw), bc);
-						mr.writeOFMeesgeToQueue(info);
-						System.out.println("Before Insertion checksum "
-								+ info.hashCode());
+						mr.writeOFEventToQueue(info);
 
-						cmd = Command.CONTINUE;
+						// wait for the command to come
+						synchronized (this) {
+							while (returnCommand == null) {
+								try {
+									this.wait();
+								} catch (InterruptedException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								}
+							}
+							cmd = returnCommand;
+							returnCommand = null;
+						}
 
-						// try syncronized waitLock later?
-						/*
-						 * try { waitLock.wait(); } catch (InterruptedException
-						 * e) {
-						 * 
-						 * }
-						 */
 					} else {
 						pktinProcTime.recordStartTimeComp(listener);
 						cmd = listener.receive(sw, m, bc);

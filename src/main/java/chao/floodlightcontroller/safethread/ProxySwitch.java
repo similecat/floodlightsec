@@ -2,6 +2,7 @@ package chao.floodlightcontroller.safethread;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -15,35 +16,21 @@ import org.openflow.protocol.OFPhysicalPort;
 import org.openflow.protocol.OFStatisticsRequest;
 import org.openflow.protocol.statistics.OFDescriptionStatistics;
 import org.openflow.protocol.statistics.OFStatistics;
-
 import net.floodlightcontroller.core.FloodlightContext;
 import net.floodlightcontroller.core.IOFMessageListener;
 import net.floodlightcontroller.core.IOFSwitch;
 import net.floodlightcontroller.core.IFloodlightProviderService.Role;
 import net.floodlightcontroller.core.deputy.KernelDeputy;
 
-public class ProxySwitch implements IOFSwitch {
-
-	private long id;
+public class ProxySwitch extends ProxyBase implements IOFSwitch {
 	
 	public ProxySwitch(long id, FloodlightModuleRunnable thread){
-		this.id = id;
-	}
-	
-	private void writeApiRequestToQueue(OFSwitchApiRequest req){
-		//KernelDeputy.taskQueue.add(req);
-		KernelDeputy.monitor.notifyAll();
+		super(id, thread);
 	}
 	
 	@Override
 	public void write(OFMessage m, FloodlightContext bc) throws IOException {
-		String method = "write";
-		List<Object> args = new ArrayList<Object>();
-		args.add(m);
-		args.add(bc);
-		
-		OFSwitchApiRequest req = new OFSwitchApiRequest(this, method, args);
-		writeApiRequestToQueue(req);
+		voidApiCall("write", Arrays.asList(m,bc));
 	}
 
 	@Override

@@ -10,13 +10,20 @@ import net.floodlightcontroller.core.FloodlightContext;
 import net.floodlightcontroller.core.IOFMessageListener;
 import net.floodlightcontroller.core.IOFSwitch;
 import net.floodlightcontroller.core.deputy.KernelDeputy;
+//import net.floodlightcontroller.core.deputy.KernelDeputy2;
 import net.floodlightcontroller.core.module.FloodlightModuleContext;
 import net.floodlightcontroller.core.module.FloodlightModuleException;
 import net.floodlightcontroller.core.module.IFloodlightModule;
 import net.floodlightcontroller.core.module.IFloodlightService;
+import net.floodlightcontroller.devicemanager.IDeviceListener;
 
 import org.openflow.protocol.OFMessage;
 import org.openflow.protocol.OFType;
+
+import chao.floodlightcontroller.safethread.message.ApiRequest;
+import chao.floodlightcontroller.safethread.message.ApiResponse;
+import chao.floodlightcontroller.safethread.message.OFEvent;
+import chao.floodlightcontroller.safethread.message.OFMessageEvent;
 
 /**
  * This is the class for the sub-coordinated thread model. The AppThread is the
@@ -36,8 +43,7 @@ public class FloodlightModuleRunnable implements Runnable, IOFMessageListener {
 	public FloodlightModuleContext realContext;
 	private final FloodlightModuleContext virtualContext;
 
-	private Queue<ApiResponse> response_queue;
-	private Queue<OFMessageInfo> ofm_queue;
+	private Queue<OFEvent> event_queue;
 	private Map<OFType, List<IOFMessageListener>> map;
 
 	private Object inboundMonitor;
@@ -74,21 +80,11 @@ public class FloodlightModuleRunnable implements Runnable, IOFMessageListener {
 		for (Class<? extends IFloodlightService> clazz : module
 				.getModuleDependencies()) {
 			virtualContext.addService(clazz,
-					ProxyServiceImplFactory.instance(clazz, this));
+					ProxyServiceImplFactory.instanceServiceImpl(clazz, this));
 		}
-		response_queue = new ConcurrentLinkedQueue<ApiResponse>();
-		ofm_queue = new ConcurrentLinkedQueue<OFMessageInfo>();
+		event_queue = new ConcurrentLinkedQueue<OFEvent>();
 		inboundMonitor = new Object();
 		moduleMonitor = new Object();
-	}
-
-	/**
-	 * Avoid leaking the name of the module running on top of it
-	 * 
-	 * @return Name of the module running on top
-	 */
-	private String getModuleName() {
-		return module.getClass().getCanonicalName();
 	}
 
 	/**
@@ -125,127 +121,12 @@ public class FloodlightModuleRunnable implements Runnable, IOFMessageListener {
 	}
 
 	/**
-	 * Write the API request to the queue of the kernel thread
-	 * 
-	 * @param req
-	 *            API request
-	 */
-	public void writeRequestToQueue(ApiRequest req) {
-		// TODO
-	}
-
-	/**
-	 * This function is waiting on the response queue until it is not empty
-	 * 
-	 * @return Always return true
-	 */
-	public boolean waitResponseFromQueue() {
-		while (response_queue.isEmpty()) {
-			synchronized (inboundMonitor) {
-				try {
-					inboundMonitor.wait();
-				} catch (InterruptedException e) {
-					System.err.println("Read response from queue interrupted");
-					e.printStackTrace();
-				}
-			}
-		}
-		return true;
-	}
-
-	/**
-	 * This function will wait on the queue for a maximum of n seconds. If the
-	 * queue is ready for reading by that time, return the true, else return
-	 * false.
-	 * 
-	 * @param n
-	 *            Patience Time in seconds. 0 means no timeout, same as
-	 *            waitResponseFromQueue()
-	 * @return True if the queue is ready for read and false if timeout
-	 */
-	public boolean waitResponseFromQueue(int n) {
-
-		if (n == 0) {
-			return waitResponseFromQueue();
-		}
-
-		long start = System.currentTimeMillis();
-		while (response_queue.isEmpty()
-				&& System.currentTimeMillis() - start < n * 1000) {
-			synchronized (inboundMonitor) {
-				try {
-					inboundMonitor.wait(1000);
-				} catch (InterruptedException e) {
-					System.err.println("Read response from queue interrupted");
-					e.printStackTrace();
-				}
-			}
-		}
-		if (!response_queue.isEmpty()) {
-			return true;
-		} else {
-			return false;
-		}
-	}
-
-	/**
-	 * This non-blocking function will read from response queue, and return null
-	 * if the queue is empty
-	 * 
-	 * @return The API call response
-	 */
-	public ApiResponse peekResponseFromQueue() {
-		if (response_queue.isEmpty()) {
-			return null;
-		}
-		return response_queue.poll();
-	}
-
-	/**
-	 * This blocking function will read from the response queue until successful
-	 * 
-	 * @return The API call response
-	 */
-	public ApiResponse readResponseFromQueue() {
-		this.waitResponseFromQueue();
-		return response_queue.poll();
-	}
-
-	/**
-	 * This blocking function will read from the response queue until successful
-	 * or timeout
-	 * 
-	 * @param n
-	 *            Timeout value
-	 * @return The API call response
-	 */
-	public ApiResponse readResponseFromQueue(int n) {
-		if (waitResponseFromQueue(n)) {
-			return response_queue.poll();
-		} else {
-			return null;
-		}
-	}
-
-	/**
-	 * Write the response to the queue of the AppThread
-	 * 
-	 * @param res
-	 */
-	public void writeReponseToQueue(ApiResponse res) {
-		response_queue.add(res);
-		synchronized (inboundMonitor) {
-			inboundMonitor.notifyAll();
-		}
-	}
-
-	/**
 	 * This function is waiting on the OFMessage queue until it is not empty
 	 * 
 	 * @return Always return true
 	 */
-	public boolean waitOFMessageFromQueue() {
-		while (ofm_queue.isEmpty()) {
+	private boolean waitOFEventFromQueue() {
+		while (event_queue.isEmpty()) {
 			synchronized (inboundMonitor) {
 				try {
 					inboundMonitor.wait();
@@ -268,14 +149,14 @@ public class FloodlightModuleRunnable implements Runnable, IOFMessageListener {
 	 *            waitResponseFromQueue()
 	 * @return True if the queue is ready for read and false if timeout
 	 */
-	public boolean waitOFMessageFromQueue(int n) {
+	private boolean waitOFEventFromQueue(int n) {
 
 		if (n == 0) {
-			return waitOFMessageFromQueue();
+			return waitOFEventFromQueue();
 		}
 
 		long start = System.currentTimeMillis();
-		while (ofm_queue.isEmpty()
+		while (event_queue.isEmpty()
 				&& System.currentTimeMillis() - start < n * 1000) {
 			synchronized (inboundMonitor) {
 				try {
@@ -286,24 +167,11 @@ public class FloodlightModuleRunnable implements Runnable, IOFMessageListener {
 				}
 			}
 		}
-		if (!ofm_queue.isEmpty()) {
+		if (!event_queue.isEmpty()) {
 			return true;
 		} else {
 			return false;
 		}
-	}
-
-	/**
-	 * This non-blocking function will read from OFMessage queue, and return
-	 * null if the queue is empty
-	 * 
-	 * @return The OFMessage
-	 */
-	public OFMessageInfo peekOFMessageFromQueue() {
-		if (ofm_queue.isEmpty()) {
-			return null;
-		}
-		return ofm_queue.poll();
 	}
 
 	/**
@@ -312,25 +180,9 @@ public class FloodlightModuleRunnable implements Runnable, IOFMessageListener {
 	 * 
 	 * @return The OFMessage
 	 */
-	public OFMessageInfo readOFMessageFromQueue() {
-		this.waitOFMessageFromQueue();
-		return ofm_queue.poll();
-	}
-
-	/**
-	 * This blocking function will read from the OFMessage queue until
-	 * successful or timeout
-	 * 
-	 * @param n
-	 *            Timeout value
-	 * @return The OFMessage
-	 */
-	public OFMessageInfo readOFMessageFromQueue(int n) {
-		if (waitOFMessageFromQueue(n)) {
-			return ofm_queue.poll();
-		} else {
-			return null;
-		}
+	public OFEvent readOFEventFromQueue() {
+		this.waitOFEventFromQueue();
+		return event_queue.poll();
 	}
 
 	/**
@@ -338,8 +190,8 @@ public class FloodlightModuleRunnable implements Runnable, IOFMessageListener {
 	 * 
 	 * @param info
 	 */
-	public void writeOFMeesgeToQueue(OFMessageInfo info) {
-		ofm_queue.add(info);
+	public void writeOFEventToQueue(OFEvent info) {
+		event_queue.add(info);
 		synchronized (inboundMonitor) {
 			inboundMonitor.notifyAll();
 		}
@@ -361,22 +213,26 @@ public class FloodlightModuleRunnable implements Runnable, IOFMessageListener {
 	@Override
 	public void run() {
 		// initialize the module
-		//initModule();
+		// initModule();
 
 		// start up the module on the thread
 		startModule();
 
 		// if the module is an implementation of the IOFMessageListener, Run a
 		// loop of listening message
-		if (module instanceof IOFMessageListener) {
+		if (module instanceof IOFMessageListener || module instanceof IDeviceListener) {
 			while (true) {
-				OFMessageInfo info = readOFMessageFromQueue();
-				System.out.println("Pop up checksum " + info.hashCode());
-				IOFSwitch sw = info.getOFSwitch();
-				OFMessage ofm = info.getOFMessage();
-				FloodlightContext cntx = info.getFloodlightContext();
-				synchronized (moduleMonitor) {
-					((IOFMessageListener) module).receive(sw, ofm, cntx);
+				OFEvent event = readOFEventFromQueue();
+				if (event instanceof OFMessageEvent && module instanceof IOFMessageListener) {
+					OFMessageEvent info = (OFMessageEvent) event;
+					IOFSwitch sw = info.getOFSwitch();
+					OFMessage ofm = info.getOFMessage();
+					FloodlightContext cntx = info.getFloodlightContext();
+					synchronized (moduleMonitor) {
+						Command cmd = ((IOFMessageListener) module).receive(sw,
+								ofm, cntx);
+						//KernelDeputy2.getInstance().informCommand(cmd);
+					}
 				}
 			}
 		}

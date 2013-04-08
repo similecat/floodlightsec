@@ -1,13 +1,13 @@
 package chao.floodlightcontroller.safethread;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 import org.openflow.protocol.OFMessage;
 import org.openflow.protocol.OFType;
 import org.openflow.protocol.factory.BasicFactory;
-
 import net.floodlightcontroller.core.FloodlightContext;
 import net.floodlightcontroller.core.IFloodlightProviderService;
 import net.floodlightcontroller.core.IHAListener;
@@ -40,8 +40,8 @@ public class ProxyFloodlightProvider extends ProxyBase implements
 	// module.
 	// A map representing the catogery of listeners you are proxy of!
 
-	public ProxyFloodlightProvider(FloodlightModuleRunnable thread) {
-		super(thread);
+	public ProxyFloodlightProvider(long id, FloodlightModuleRunnable thread) {
+		super(id, thread);
 	}
 
 	/**
@@ -54,65 +54,19 @@ public class ProxyFloodlightProvider extends ProxyBase implements
 	 */
 	@Override
 	public void addOFMessageListener(OFType type, IOFMessageListener listener) {
-
-//		String method = "addOFMessageListener";
-//		List<Object> args = new ArrayList<Object>();
-//		args.add(type);
-//		args.add(this.pThread);
-//
-//		ServiceImplApiRequest req = new ServiceImplApiRequest(pThread,
-//				IFloodlightProviderService.class, method, args);
-//
-//		pThread.writeRequestToQueue(req);
-		
-		/**
-		 * Now only do the original registration
-		 */
-		pThread.realContext.getServiceImpl(IFloodlightProviderService.class)
-				.addOFMessageListener(type, this.pThread);
+		voidApiCall("addOFMessageListener", Arrays.asList(type,this.thread));
 	}
 
 	@Override
 	public void removeOFMessageListener(OFType type, IOFMessageListener listener) {
-		String method = "removeOFMessageListener";
-		List<Object> args = new ArrayList<Object>();
-		args.add(type);
-		args.add(this.pThread);
-
-		ServiceImplApiRequest req = new ServiceImplApiRequest(pThread,
-				IFloodlightProviderService.class, method, args);
-
-		pThread.writeRequestToQueue(req);
+		voidApiCall("removeOFMessageListener", Arrays.asList(type, listener));
 	}
 
-	@Override
-	public Map<OFType, List<IOFMessageListener>> getListeners() {
-		String method = "getListeners";
-		List<Object> args = new ArrayList<Object>();
-
-		ServiceImplApiRequest req = new ServiceImplApiRequest(pThread,
-				IFloodlightProviderService.class, method, args);
-
-		pThread.writeRequestToQueue(req);
-		
-		ServiceImplApiResponse res = (ServiceImplApiResponse) this.pThread.readResponseFromQueue();
-		Map<OFType, List<IOFMessageListener>> value = (Map<OFType, List<IOFMessageListener>>) res.getReturnValue();
-		return value;
-	}
 
 	@Override
 	public Map<Long, IOFSwitch> getSwitches() {
-		String method = "getSwitches";
-		List<Object> args = new ArrayList<Object>();
-
-		ServiceImplApiRequest req = new ServiceImplApiRequest(pThread,
-				IFloodlightProviderService.class, method, args);
-
-		pThread.writeRequestToQueue(req);
-		
-		ServiceImplApiResponse res = (ServiceImplApiResponse) this.pThread.readResponseFromQueue();
-		Map<Long, IOFSwitch> value = (Map<Long, IOFSwitch>) res.getReturnValue();
-		return value;
+		Object r = fullApiCall("getSwitches", Arrays.asList());
+		return (Map<Long, IOFSwitch>) r;
 	}
 
 	@Override
@@ -194,7 +148,7 @@ public class ProxyFloodlightProvider extends ProxyBase implements
 		/**
 		 * Now only do the original registration
 		 */
-		return pThread.realContext.getServiceImpl(
+		return thread.realContext.getServiceImpl(
 				IFloodlightProviderService.class).getOFMessageFactory();
 	}
 
@@ -232,6 +186,12 @@ public class ProxyFloodlightProvider extends ProxyBase implements
 	public void setAlwaysClearFlowsOnSwAdd(boolean value) {
 		// TODO Auto-generated method stub
 
+	}
+
+	@Override
+	public Map<OFType, List<IOFMessageListener>> getListeners() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }
