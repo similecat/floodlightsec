@@ -1,33 +1,29 @@
 package chao.floodlightcontroller.safethread;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.Collection;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import net.floodlightcontroller.core.FloodlightContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.floodlightcontroller.core.IListener.Command;
 import net.floodlightcontroller.core.IOFMessageListener;
-import net.floodlightcontroller.core.IOFSwitch;
-import net.floodlightcontroller.core.deputy.KernelDeputy;
-//import net.floodlightcontroller.core.deputy.KernelDeputy2;
 import net.floodlightcontroller.core.module.FloodlightModuleContext;
 import net.floodlightcontroller.core.module.FloodlightModuleException;
+import net.floodlightcontroller.core.module.FloodlightModuleLoader;
 import net.floodlightcontroller.core.module.IFloodlightModule;
 import net.floodlightcontroller.core.module.IFloodlightService;
-import net.floodlightcontroller.devicemanager.IDeviceListener;
 import net.floodlightcontroller.util.QueueReader;
 import net.floodlightcontroller.util.QueueWriter;
 
-import org.openflow.protocol.OFMessage;
-import org.openflow.protocol.OFType;
-
-import chao.floodlightcontroller.safethread.message.ApiRequest;
-import chao.floodlightcontroller.safethread.message.ApiResponse;
 import chao.floodlightcontroller.safethread.message.OFEvent;
+import chao.floodlightcontroller.safethread.message.OFEventResponse;
 import chao.floodlightcontroller.safethread.message.OFMessageEvent;
 
 /**
+ * FloodlightModuleRunnable mainly runs in app space except the constructor.
+ * 
  * This is the class for the sub-coordinated thread model. The AppThread is the
  * bed where the module is embedded. However, for the module, this AppThread
  * should be transparent.
@@ -39,20 +35,18 @@ import chao.floodlightcontroller.safethread.message.OFMessageEvent;
  * @author shichao, Xitao Wen
  * 
  */
-public class FloodlightModuleRunnable implements Runnable, IOFMessageListener {
-	private final IFloodlightModule module;
-	// TODO Field to be removed
-	public FloodlightModuleContext realContext;
-	private final FloodlightModuleContext virtualContext;
-
-	private Queue<OFEvent> event_queue;
-	private Map<OFType, List<IOFMessageListener>> map;
-
-	private Object inboundMonitor;
-	private Object moduleMonitor;
+public abstract class FloodlightModuleRunnable implements Runnable, IFloodlightModule {
+	protected static Logger logger = LoggerFactory
+			.getLogger(FloodlightModuleLoader.class);
 	
-	protected final QueueReader<OFEvent> eventQueueReader = null; // Event (or listener or callback) queue	
-	public final QueueWriter<OFEvent> eventQueueWriter = null;
+	//private final IFloodlightModule app; // equals "this"
+	private FloodlightModuleContext moduleContextDelegate;
+	
+	private QueueReader<OFEvent> eventQueueReader; // Event (or listener or callback) queue	
+	public QueueWriter<OFEvent> eventQueueWriter;
+	
+	private IOFMessageListener messageListener;
+	private Object initAndStartUpMonitor;
 
 	/**
 	 * (1) Every AppThread will have a map of proxy service implementation in
@@ -79,203 +73,106 @@ public class FloodlightModuleRunnable implements Runnable, IOFMessageListener {
 	 * 
 	 */
 
-	public FloodlightModuleRunnable(IFloodlightModule module) {
-		this.module = module;
-		virtualContext = new FloodlightModuleContext();
-//		for (Class<? extends IFloodlightService> clazz : module
-//				.getModuleDependencies()) {
-//			virtualContext.addService(clazz,
-//					ProxyServiceImplFactory.instanceServiceImpl(clazz, this));
-//		}
-		event_queue = new ConcurrentLinkedQueue<OFEvent>();
-		inboundMonitor = new Object();
-		moduleMonitor = new Object();
+	public void initInternal(FloodlightModuleContext cntx, Object monitor) {
+		//this.app = module;
+		this.initAndStartUpMonitor = monitor;
+		
+		this.moduleContextDelegate = new FloodlightModuleContext();
+		
+		Collection<Class<? extends IFloodlightService>> dependences = this.getModuleDependencies();
+		for(Class<? extends IFloodlightService> c : dependences) {
+			IFloodlightService s = cntx.getServiceImpl(c);
+			
+			// TODO: Sanitize service
+			
+			moduleContextDelegate.addService(c, s);
+		}
+		
+		// Init event queue
+		Object eventMonitor = new Object();
+		Queue<OFEvent> eventQueue = new ConcurrentLinkedQueue<OFEvent>();
+		eventQueueWriter = new QueueWriter<OFEvent>(eventMonitor, eventQueue);
+		eventQueueReader = new QueueReader<OFEvent>(eventMonitor, eventQueue);
 	}
 
 	/**
 	 * Method for initialize the module with your crafted context. Make sure
 	 * that it is called after setting the module
 	 */
-	public void initModule() {
+	public void initEx() {
 		try {
-			module.init(virtualContext);
+			this.init(moduleContextDelegate);
 		} catch (FloodlightModuleException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			logger.debug("FloodlightModuleException: {}", e);
 		}
-	}
-
-	/**
-	 * A temporary method to allow the AppThread to directly refer to the kernel
-	 * components
-	 * 
-	 * @deprecated
-	 * @param realContext
-	 *            real FloodlightModuleContext
-	 */
-	public void initModule(FloodlightModuleContext realContext) {
-		this.realContext = realContext;
-		initModule();
 	}
 
 	/**
 	 * Start up a module
 	 */
-	public void startModule() {
-		module.startUp(virtualContext);
+	public void startUpEx() {
+		this.startUp(moduleContextDelegate);
 	}
-
-	/**
-	 * This function is waiting on the OFMessage queue until it is not empty
-	 * 
-	 * @return Always return true
-	 */
-	private boolean waitOFEventFromQueue() {
-		while (event_queue.isEmpty()) {
-			synchronized (inboundMonitor) {
-				try {
-					inboundMonitor.wait();
-				} catch (InterruptedException e) {
-					System.err.println("Read OFMessage from queue interrupted");
-					e.printStackTrace();
-				}
-			}
-		}
-		return true;
-	}
-
-	/**
-	 * This function will wait on the queue for a maximum of n seconds. If the
-	 * queue is ready for reading by that time, return the true, else return
-	 * false.
-	 * 
-	 * @param n
-	 *            Patience Time in seconds. 0 means no timeout, same as
-	 *            waitResponseFromQueue()
-	 * @return True if the queue is ready for read and false if timeout
-	 */
-	private boolean waitOFEventFromQueue(int n) {
-
-		if (n == 0) {
-			return waitOFEventFromQueue();
-		}
-
-		long start = System.currentTimeMillis();
-		while (event_queue.isEmpty()
-				&& System.currentTimeMillis() - start < n * 1000) {
-			synchronized (inboundMonitor) {
-				try {
-					inboundMonitor.wait(1000);
-				} catch (InterruptedException e) {
-					System.err.println("Read OFMessage from queue interrupted");
-					e.printStackTrace();
-				}
-			}
-		}
-		if (!event_queue.isEmpty()) {
-			return true;
-		} else {
-			return false;
-		}
-	}
-
-	/**
-	 * This blocking function will read from the OFMessage queue until
-	 * successful
-	 * 
-	 * @return The OFMessage
-	 */
-	public OFEvent readOFEventFromQueue() {
-		this.waitOFEventFromQueue();
-		return event_queue.poll();
-	}
-
-	/**
-	 * Write a OFMessage to the queue of the AppThread
-	 * 
-	 * @param info
-	 */
-	public void writeOFEventToQueue(OFEvent info) {
-		event_queue.add(info);
-		synchronized (inboundMonitor) {
-			inboundMonitor.notifyAll();
-		}
-	}
-
-	/**
-	 * A dangerous method, called only from proxy service implementations
-	 * 
-	 * @param type
-	 * @param listener
-	 */
-	public void addOFListener(OFType type, IOFMessageListener listener) {
-		if (map.get(type) == null) {
-			map.put(type, new ArrayList<IOFMessageListener>());
-		}
-		map.get(type).add(listener);
+	
+	public void setListener(IOFMessageListener l) {
+		this.messageListener = l;
 	}
 
 	@Override
 	public void run() {
-		// initialize the module
-		// initModule();
+		OFEvent event;
+		
+		// initialize the module internal data
+		synchronized(initAndStartUpMonitor) {
+			try {
+				initAndStartUpMonitor.wait();
+			} catch (InterruptedException e) {
+				logger.debug("InterruptedException: {}", e);
+			}
+		}
+		initEx();
 
-		// start up the module on the thread
-		startModule();
+		// start up app external dependences
+		synchronized(initAndStartUpMonitor) {
+			try {
+				initAndStartUpMonitor.wait();
+			} catch (InterruptedException e) {
+				logger.debug("InterruptedException: {}", e);
+			}
+		}
+		startUpEx();
 
-		// if the module is an implementation of the IOFMessageListener, Run a
-		// loop of listening message
-		if (module instanceof IOFMessageListener || module instanceof IDeviceListener) {
-			while (true) {
-				OFEvent event = readOFEventFromQueue();
-				if (event instanceof OFMessageEvent && module instanceof IOFMessageListener) {
-					OFMessageEvent info = (OFMessageEvent) event;
-					IOFSwitch sw = info.getOFSwitch();
-					OFMessage ofm = info.getOFMessage();
-					FloodlightContext cntx = info.getFloodlightContext();
-					synchronized (moduleMonitor) {
-						Command cmd = ((IOFMessageListener) module).receive(sw,
-								ofm, cntx);
-						//KernelDeputy2.getInstance().informCommand(cmd);
-					}
-				}
+		while (true) {
+			eventQueueReader.waits();
+			event = eventQueueReader.read();
+			
+			while(event!=null) {
+				// Dispatch and execute
+				Command cmd = dispatchEvent(event);
+				
+				event.getResponseWriter().write(new OFEventResponse(cmd));
+				event.getResponseWriter().notifies();
+			
+				event = eventQueueReader.read();
 			}
 		}
 	}
 
-	/**
-	 * Register as a listener with the name from the module
-	 */
-	@Override
-	public String getName() {
-		// The name of the module
-		if (module instanceof IOFMessageListener) {
-			return ((IOFMessageListener) module).getName();
+	private Command dispatchEvent(
+			OFEvent event) {
+		Command cmd;
+		
+		if (event instanceof OFMessageEvent) {
+			cmd = messageListener.receive(((OFMessageEvent) event).getOFSwitch(),
+					((OFMessageEvent) event).getOFMessage(),
+					((OFMessageEvent) event).getFloodlightContext());
 		}
-		return null;
-	}
-
-	@Override
-	public boolean isCallbackOrderingPrereq(OFType type, String name) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public boolean isCallbackOrderingPostreq(OFType type, String name) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	/**
-	 * This receive function should never ever be called from the kernel thread
-	 */
-	@Override
-	public net.floodlightcontroller.core.IListener.Command receive(
-			IOFSwitch sw, OFMessage msg, FloodlightContext cntx) {
-		// It should never be called
-		System.err.println("It should never be called");
-		return null;
+		else {
+			// TODO: Add other cases
+			// Should not fall into here...
+			cmd = Command.CONTINUE;
+		}
+		return cmd;
 	}
 
 }

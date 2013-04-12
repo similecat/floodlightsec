@@ -419,6 +419,8 @@ public class FloodlightModuleLoader {
 
 	protected void initStartupModules(Collection<IFloodlightModule> moduleSet)
 			throws FloodlightModuleException {
+		Map<IFloodlightModule, Object> monitorMap = new HashMap<IFloodlightModule, Object>();
+		
 		for (IFloodlightModule module : moduleSet) {
 			// Get the module's service instance(s)
 			Map<Class<? extends IFloodlightService>, IFloodlightService> simpls = module
@@ -449,6 +451,23 @@ public class FloodlightModuleLoader {
 			}
 		}
 
+		for (IFloodlightModule module : moduleSet) {
+			if (module instanceof FloodlightModuleRunnable) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("Starting unprivileged thread for "
+							+ module.getClass().getCanonicalName());
+				}
+				// Init internal data of all apps
+				Object obj = new Object();
+				monitorMap.put(module, obj);
+				((FloodlightModuleRunnable) module).initInternal(floodlightModuleContext, obj);
+				
+				// Init and start thread
+				// TODO: Configure securityManager
+				Thread t = new Thread(((FloodlightModuleRunnable) module));
+				t.start();
+			}
+		}
 		
 		for (IFloodlightModule module : moduleSet) {
 			// init the normal module
@@ -456,8 +475,17 @@ public class FloodlightModuleLoader {
 				logger.debug("Initializing "
 						+ module.getClass().getCanonicalName());
 			}
-			if (!(module instanceof Hub)) 
+			if (!(module instanceof FloodlightModuleRunnable)) {
 				module.init(floodlightModuleContext);
+			}
+			else {				
+				// Call initEx
+				Object obj = monitorMap.get(module);
+				synchronized(obj) {
+					obj.notify();
+				}
+			}
+				
 		}
 
 		for (IFloodlightModule module : moduleSet) {
@@ -465,17 +493,25 @@ public class FloodlightModuleLoader {
 			if (logger.isDebugEnabled()) {
 				logger.debug("Starting " + module.getClass().getCanonicalName());
 			}
-			if (!(module instanceof Hub)) 
+			if (!(module instanceof FloodlightModuleRunnable)) {
 				module.startUp(floodlightModuleContext);
-		}
-
-		for (IFloodlightModule module : moduleSet){
-			if(module instanceof Hub){
-				FloodlightModuleRunnable fmr = new FloodlightModuleRunnable(module);
-				fmr.initModule(floodlightModuleContext);
-				new Thread(fmr).start();
+			}
+			else {
+				// Call startUpEx
+				Object obj = monitorMap.get(module);
+				synchronized(obj) {
+					obj.notify();
+				}				
 			}
 		}
+		
+//		for (IFloodlightModule module : moduleSet){
+//			if(module instanceof Hub){
+//				FloodlightModuleRunnable fmr = new FloodlightModuleRunnable(module);
+//				fmr.initModule(floodlightModuleContext);
+//				new Thread(fmr).start();
+//			}
+//		}
 		
 	}
 

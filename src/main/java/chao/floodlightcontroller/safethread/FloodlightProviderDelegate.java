@@ -20,7 +20,7 @@ import net.floodlightcontroller.core.IOFSwitchListener;
 import net.floodlightcontroller.util.QueueWriter;
 
 /**
- * This is a proxy FloodlightProvider in the user space. Note that not every API
+ * This is a proxy FloodlightProvider in the app space. Note that not every API
  * will be needed to implement. We only need to implement those called from the
  * module and simply return for the rest of API used internally. This works the
  * same for the other Proxy service implementations.
@@ -35,15 +35,18 @@ import net.floodlightcontroller.util.QueueWriter;
  * @author shichao
  * 
  */
-public class ProxyFloodlightProvider extends ProxyBase implements
+public class FloodlightProviderDelegate extends DelegateBase implements
 		IFloodlightProviderService {
+	
+	protected BasicFactory factory;
 
 	// Some kind of listener lying behind the wall. Most likely that is a
 	// module.
 	// A map representing the catogery of listeners you are proxy of!
 
-	public ProxyFloodlightProvider(long id, FloodlightModuleRunnable app, QueueWriter<ApiRequest> qw) {
+	public FloodlightProviderDelegate(long id, FloodlightModuleRunnable app, QueueWriter<ApiRequest> qw) {
 		super(id, app, qw);
+		factory = new BasicFactory();
 	}
 
 	/**
@@ -156,8 +159,7 @@ public class ProxyFloodlightProvider extends ProxyBase implements
 		/**
 		 * Now only do the original registration
 		 */
-		return this.app.realContext.getServiceImpl(
-				IFloodlightProviderService.class).getOFMessageFactory();
+		return factory;
 	}
 
 	@Override

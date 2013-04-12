@@ -1,7 +1,6 @@
 package chao.floodlightcontroller.safethread;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -22,12 +21,11 @@ import net.floodlightcontroller.core.FloodlightContext;
 import net.floodlightcontroller.core.IOFMessageListener;
 import net.floodlightcontroller.core.IOFSwitch;
 import net.floodlightcontroller.core.IFloodlightProviderService.Role;
-import net.floodlightcontroller.core.deputy.KernelDeputy;
 import net.floodlightcontroller.util.QueueWriter;
 
-public class ProxySwitch extends ProxyBase implements IOFSwitch {
+public class SwitchDelegate extends DelegateBase implements IOFSwitch {
 	
-	public ProxySwitch(long id, FloodlightModuleRunnable app, QueueWriter<ApiRequest> qw) {
+	public SwitchDelegate(long id, FloodlightModuleRunnable app, QueueWriter<ApiRequest> qw) {
 		super(id, app, qw);
 	}
 	

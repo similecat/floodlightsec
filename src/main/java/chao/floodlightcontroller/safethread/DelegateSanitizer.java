@@ -13,23 +13,23 @@ import net.floodlightcontroller.util.QueueWriter;
  * @author Xitao Wen
  *
  */
-public class ProxySanitizer {	
+public class DelegateSanitizer {	
 	private final Map<Long, Object> id2ObjectMap;  // Shared with KernelDeputy
 	private final QueueWriter<ApiRequest> apiRequestQueueWriter; // Shared with KernelDeputy	 
 	private long idBase;
 	
-	public ProxySanitizer(Map<Long, Object> idMap, QueueWriter<ApiRequest> qw) {
+	public DelegateSanitizer(Map<Long, Object> idMap, QueueWriter<ApiRequest> qw) {
 		this.id2ObjectMap = idMap;
 		this.apiRequestQueueWriter = qw;
 	}
 	
-	public ProxyFloodlightProvider getProxyFloodlightProvider(IFloodlightProviderService iprovider, 
+	public FloodlightProviderDelegate getProxyFloodlightProvider(IFloodlightProviderService iprovider, 
 			FloodlightModuleRunnable app) {
 		if(!(iprovider instanceof Controller))
 			return null;
 		
 		this.id2ObjectMap.put(idBase, iprovider);
-		ProxyFloodlightProvider proxy = new ProxyFloodlightProvider(this.idBase++, app, this.apiRequestQueueWriter);
+		FloodlightProviderDelegate proxy = new FloodlightProviderDelegate(this.idBase++, app, this.apiRequestQueueWriter);
 		return proxy;
 	}
 	

@@ -16,14 +16,14 @@ import chao.floodlightcontroller.safethread.message.ApiResponse;
  * @author shichao, Xitao Wen
  * 
  */
-public abstract class ProxyBase {
+public abstract class DelegateBase {
 
 	protected final long id; // Object ID assigned by kernel
 	protected final FloodlightModuleRunnable app; // Associated app
 	
 	protected final QueueWriter<ApiRequest> kernelQueueWriter; // Kernel api queue
 
-	protected ProxyBase(long id, FloodlightModuleRunnable app, QueueWriter<ApiRequest> qw) {
+	protected DelegateBase(long id, FloodlightModuleRunnable app, QueueWriter<ApiRequest> qw) {
 		this.id = id;
 		this.app = app;
 		this.kernelQueueWriter = qw;

@@ -42,18 +42,20 @@ import org.openflow.util.U16;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import chao.floodlightcontroller.safethread.FloodlightModuleRunnable;
+
 /**
  * 
  * @author David Erickson (daviderickson@cs.stanford.edu) - 04/04/10
  */
-public class Hub implements IFloodlightModule, IOFMessageListener {
+public class Hub extends FloodlightModuleRunnable implements IFloodlightModule, IOFMessageListener {
 	protected static Logger log = LoggerFactory.getLogger(Hub.class);
 
 	protected IFloodlightProviderService floodlightProvider;
 
 	/**
-	 * @param floodlightProvider
-	 *            the floodlightProvider to set
+	 * Function for testing only
+	 * @param floodlightProvider the floodlightProvider to set
 	 */
 	public void setFloodlightProvider(
 			IFloodlightProviderService floodlightProvider) {
