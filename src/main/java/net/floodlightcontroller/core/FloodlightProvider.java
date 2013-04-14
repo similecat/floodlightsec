@@ -19,6 +19,10 @@ import net.floodlightcontroller.threadpool.IThreadPoolService;
 public class FloodlightProvider implements IFloodlightModule {
     Controller controller;
     
+    public Controller getController() {
+    	return controller;
+    }
+    
     @Override
     public Collection<Class<? extends IFloodlightService>> getModuleServices() {
         Collection<Class<? extends IFloodlightService>> services =

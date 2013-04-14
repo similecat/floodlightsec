@@ -139,7 +139,7 @@ public class FloodlightTestModuleLoader extends FloodlightModuleLoader {
 		}
 		
 		try {
-			fmc = loadModulesFromList(modulesAsString, null, mockedServices);
+			fmc = loadModulesFromList(modulesAsString,modulesAsString, null, mockedServices);
 		} catch (FloodlightModuleException e) {
 			log.error(e.getMessage());
 		}

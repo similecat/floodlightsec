@@ -1,11 +1,14 @@
 package chao.floodlightcontroller.safethread;
 
+import java.util.Collection;
 import java.util.Map;
 
 import chao.floodlightcontroller.safethread.message.ApiRequest;
 
 import net.floodlightcontroller.core.IFloodlightProviderService;
 import net.floodlightcontroller.core.internal.Controller;
+import net.floodlightcontroller.core.module.FloodlightModuleContext;
+import net.floodlightcontroller.core.module.IFloodlightService;
 import net.floodlightcontroller.util.QueueWriter;
 
 /**
@@ -23,7 +26,7 @@ public class DelegateSanitizer {
 		this.apiRequestQueueWriter = qw;
 	}
 	
-	public FloodlightProviderDelegate getProxyFloodlightProvider(IFloodlightProviderService iprovider, 
+	public FloodlightProviderDelegate getFloodlightProviderDelegate(IFloodlightProviderService iprovider, 
 			FloodlightModuleRunnable app) {
 		if(!(iprovider instanceof Controller))
 			return null;
@@ -31,6 +34,27 @@ public class DelegateSanitizer {
 		this.id2ObjectMap.put(idBase, iprovider);
 		FloodlightProviderDelegate proxy = new FloodlightProviderDelegate(this.idBase++, app, this.apiRequestQueueWriter);
 		return proxy;
+	}
+
+	public FloodlightModuleContext getFloodlightModuleContextDelegate(FloodlightModuleContext cntx, 
+			FloodlightModuleRunnable app) {
+		FloodlightModuleContext ret = new FloodlightModuleContext();
+		
+		Collection<Class<? extends IFloodlightService>> servs = app.getModuleDependencies();
+		for (Class<? extends IFloodlightService> s : servs) {
+			ret.addService(s, this.sanitize(cntx.getServiceImpl(s), app));
+		}
+		
+		return ret;		
+	}
+	
+	public IFloodlightService sanitize(IFloodlightService s, FloodlightModuleRunnable app) {
+		if (s instanceof IFloodlightProviderService) {
+			return this.getFloodlightProviderDelegate((IFloodlightProviderService)s, app);
+		}
+		else {		
+			return null;
+		}
 	}
 	
 }

@@ -3,9 +3,7 @@ package net.floodlightcontroller.core;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 
-import net.floodlightcontroller.core.deputy.KernelDeputy;
 import net.floodlightcontroller.core.internal.CmdLineSettings;
-import net.floodlightcontroller.core.internal.Controller;
 import net.floodlightcontroller.core.module.FloodlightModuleException;
 import net.floodlightcontroller.core.module.FloodlightModuleLoader;
 import net.floodlightcontroller.core.module.IFloodlightModuleContext;
@@ -41,10 +39,7 @@ public class Main {
         IFloodlightModuleContext moduleContext = fml.loadModulesFromConfig(settings.getModuleFile());
         // Run REST server
         IRestApiService restApi = moduleContext.getServiceImpl(IRestApiService.class);
-        restApi.run();
-        // Run Kernel Deputy thread
-        Controller.deputy = new KernelDeputy();
-        new Thread(Controller.deputy).start();
+        restApi.run();        
         // Run the main floodlight module
         IFloodlightProviderService controller =
                 moduleContext.getServiceImpl(IFloodlightProviderService.class);

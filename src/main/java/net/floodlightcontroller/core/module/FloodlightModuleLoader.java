@@ -20,13 +20,15 @@ import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 import java.util.Set;
 
+import net.floodlightcontroller.core.FloodlightProvider;
 import net.floodlightcontroller.core.annotations.LogMessageDoc;
 import net.floodlightcontroller.core.annotations.LogMessageDocs;
-import net.floodlightcontroller.hub.Hub;
+import net.floodlightcontroller.core.internal.Controller;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import chao.floodlightcontroller.safethread.DelegateSanitizer;
 import chao.floodlightcontroller.safethread.FloodlightModuleRunnable;
 
 /**
@@ -45,12 +47,18 @@ public class FloodlightModuleLoader {
 	protected static Object lock = new Object();
 
 	protected FloodlightModuleContext floodlightModuleContext;
+	protected DelegateSanitizer sanitizer = null;
 
 	public static final String COMPILED_CONF_FILE = "floodlightdefault.properties";
 	public static final String FLOODLIGHT_MODULES_KEY = "floodlight.modules";
+	public static final String FLOODLIGHT_APPS_KEY = "floodlight.apps"; 
 
 	public FloodlightModuleLoader() {
 		floodlightModuleContext = new FloodlightModuleContext();
+	}
+	
+	public void setSanitizer(DelegateSanitizer s) {
+		this.sanitizer = s;
 	}
 
 	/**
@@ -181,10 +189,14 @@ public class FloodlightModuleLoader {
 		}
 
 		String moduleList = prop.getProperty(FLOODLIGHT_MODULES_KEY)
+				.replaceAll("\\s", "");		
+		String appList = prop.getProperty(FLOODLIGHT_APPS_KEY)
 				.replaceAll("\\s", "");
-		Collection<String> configMods = new ArrayList<String>();
+		Collection<String> configMods = new ArrayList<String>(),
+				configApps = new ArrayList<String>();
 		configMods.addAll(Arrays.asList(moduleList.split(",")));
-		return loadModulesFromList(configMods, prop);
+		configApps.addAll(Arrays.asList(appList.split(",")));
+		return loadModulesFromList(configMods, configApps, prop);
 	}
 
 	/**
@@ -199,7 +211,8 @@ public class FloodlightModuleLoader {
 	 * @throws FloodlightModuleException
 	 */
 	protected IFloodlightModuleContext loadModulesFromList(
-			Collection<String> configMods, Properties prop,
+			Collection<String> configMods, 
+			Collection<String> configApps, Properties prop,
 			Collection<IFloodlightService> ignoreList)
 			throws FloodlightModuleException {
 		logger.debug("Starting module loader");
@@ -209,11 +222,13 @@ public class FloodlightModuleLoader {
 		findAllModules(configMods);
 
 		Collection<IFloodlightModule> moduleSet = new ArrayList<IFloodlightModule>();
+		Collection<IFloodlightModule> appSet = new ArrayList<IFloodlightModule>();
 		Map<Class<? extends IFloodlightService>, IFloodlightModule> moduleMap = new HashMap<Class<? extends IFloodlightService>, IFloodlightModule>();
 
 		Queue<String> moduleQ = new LinkedList<String>();
 		// Add the explicitly configured modules to the q
 		moduleQ.addAll(configMods);
+		moduleQ.addAll(configApps);
 		Set<String> modsVisited = new HashSet<String>();
 
 		while (!moduleQ.isEmpty()) {
@@ -253,7 +268,12 @@ public class FloodlightModuleLoader {
 			}
 
 			// Add the module to be loaded
-			addModule(moduleMap, moduleSet, module);
+			if(module instanceof FloodlightModuleRunnable) {
+				addModule(moduleMap, appSet, module);
+			} else {
+				addModule(moduleMap, moduleSet, module);
+			}
+			
 			// Add it's dep's to the queue
 			Collection<Class<? extends IFloodlightService>> deps = module
 					.getModuleDependencies();
@@ -305,9 +325,13 @@ public class FloodlightModuleLoader {
 			}
 		}
 
-		floodlightModuleContext.setModuleSet(moduleSet);
+		Collection<IFloodlightModule> set = new ArrayList<IFloodlightModule>();
+		set.addAll(moduleSet);
+		set.addAll(appSet);
+		floodlightModuleContext.setModuleSet(set);
+		
 		parseConfigParameters(prop);
-		initStartupModules(moduleSet);
+		initStartupModules(moduleSet, appSet);
 
 		return floodlightModuleContext;
 	}
@@ -323,9 +347,9 @@ public class FloodlightModuleLoader {
 	 * @throws FloodlightModuleException
 	 */
 	public IFloodlightModuleContext loadModulesFromList(
-			Collection<String> configMods, Properties prop)
+			Collection<String> configMods, Collection<String> configApps, Properties prop)
 			throws FloodlightModuleException {
-		return loadModulesFromList(configMods, prop, null);
+		return loadModulesFromList(configMods, configApps, prop, null);
 	}
 
 	/**
@@ -417,10 +441,11 @@ public class FloodlightModuleLoader {
 		}
 	}
 
-	protected void initStartupModules(Collection<IFloodlightModule> moduleSet)
+	protected void initStartupModules(Collection<IFloodlightModule> moduleSet, Collection<IFloodlightModule> appSet)
 			throws FloodlightModuleException {
 		Map<IFloodlightModule, Object> monitorMap = new HashMap<IFloodlightModule, Object>();
 		
+		// Init modules before apps
 		for (IFloodlightModule module : moduleSet) {
 			// Get the module's service instance(s)
 			Map<Class<? extends IFloodlightService>, IFloodlightService> simpls = module
@@ -450,24 +475,6 @@ public class FloodlightModuleLoader {
 				}
 			}
 		}
-
-		for (IFloodlightModule module : moduleSet) {
-			if (module instanceof FloodlightModuleRunnable) {
-				if (logger.isDebugEnabled()) {
-					logger.debug("Starting unprivileged thread for "
-							+ module.getClass().getCanonicalName());
-				}
-				// Init internal data of all apps
-				Object obj = new Object();
-				monitorMap.put(module, obj);
-				((FloodlightModuleRunnable) module).initInternal(floodlightModuleContext, obj);
-				
-				// Init and start thread
-				// TODO: Configure securityManager
-				Thread t = new Thread(((FloodlightModuleRunnable) module));
-				t.start();
-			}
-		}
 		
 		for (IFloodlightModule module : moduleSet) {
 			// init the normal module
@@ -475,16 +482,7 @@ public class FloodlightModuleLoader {
 				logger.debug("Initializing "
 						+ module.getClass().getCanonicalName());
 			}
-			if (!(module instanceof FloodlightModuleRunnable)) {
-				module.init(floodlightModuleContext);
-			}
-			else {				
-				// Call initEx
-				Object obj = monitorMap.get(module);
-				synchronized(obj) {
-					obj.notify();
-				}
-			}
+			module.init(floodlightModuleContext);
 				
 		}
 
@@ -493,26 +491,96 @@ public class FloodlightModuleLoader {
 			if (logger.isDebugEnabled()) {
 				logger.debug("Starting " + module.getClass().getCanonicalName());
 			}
-			if (!(module instanceof FloodlightModuleRunnable)) {
-				module.startUp(floodlightModuleContext);
-			}
-			else {
-				// Call startUpEx
-				Object obj = monitorMap.get(module);
-				synchronized(obj) {
-					obj.notify();
-				}				
+			module.startUp(floodlightModuleContext);
+			
+			if(module instanceof FloodlightProvider) {
+				Controller c = ((FloodlightProvider) module).getController();
+				this.sanitizer = c.sanitizer;
 			}
 		}
 		
-//		for (IFloodlightModule module : moduleSet){
-//			if(module instanceof Hub){
-//				FloodlightModuleRunnable fmr = new FloodlightModuleRunnable(module);
-//				fmr.initModule(floodlightModuleContext);
-//				new Thread(fmr).start();
-//			}
-//		}
-		
+		// Init apps then
+		for (IFloodlightModule module : appSet) {
+			// Get the module's service instance(s)
+			Map<Class<? extends IFloodlightService>, IFloodlightService> simpls = module
+					.getServiceImpls();
+
+			// add its services to the context
+			if (simpls != null) {
+				for (Entry<Class<? extends IFloodlightService>, IFloodlightService> s : simpls
+						.entrySet()) {
+					if (logger.isDebugEnabled()) {
+						logger.debug("Setting " + s.getValue()
+								+ "  as provider for "
+								+ s.getKey().getCanonicalName());
+					}
+					if (floodlightModuleContext.getServiceImpl(s.getKey()) == null) {
+						floodlightModuleContext.addService(s.getKey(),
+								s.getValue());
+					} else {
+						throw new FloodlightModuleException("Cannot set "
+								+ s.getValue()
+								+ " as the provider for "
+								+ s.getKey().getCanonicalName()
+								+ " because "
+								+ floodlightModuleContext.getServiceImpl(s
+										.getKey()) + " already provides it");
+					}
+				}
+			}
+		}
+
+		for (IFloodlightModule module : appSet) {
+			if (module instanceof FloodlightModuleRunnable) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("Starting unprivileged thread for "
+							+ module.getClass().getCanonicalName());
+				}
+				// Init internal data of all apps
+				Object obj = new Object(), 
+						initLock = new Object();
+				monitorMap.put(module, obj);
+				((FloodlightModuleRunnable) module).initInternal(floodlightModuleContext, this.sanitizer, obj, initLock);
+				
+				// Init and start thread
+				// TODO: Configure securityManager
+				Thread t = new Thread(((FloodlightModuleRunnable) module));
+				t.start();
+				synchronized(initLock) {
+					try {
+						initLock.wait();
+					} catch (InterruptedException e) {
+						// log
+					}
+				}
+				
+				// init the normal module
+				if (logger.isDebugEnabled()) {
+					logger.debug("Initializing App "
+							+ module.getClass().getCanonicalName());
+				}
+				synchronized(obj) {
+					obj.notifyAll();
+				}
+				synchronized(initLock) {
+					try {
+						initLock.wait();
+					} catch (InterruptedException e) {
+						// log
+					}
+				}
+
+				// start up the normal module
+				if (logger.isDebugEnabled()) {
+					logger.debug("Starting App " + module.getClass().getCanonicalName());
+				}
+				// Call startUpEx
+				obj = monitorMap.get(module);
+				synchronized(obj) {
+					obj.notifyAll();
+				}
+			}
+		}
 	}
 
 	/**

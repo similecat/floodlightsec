@@ -47,6 +47,7 @@ public abstract class FloodlightModuleRunnable implements Runnable, IFloodlightM
 	
 	private IOFMessageListener messageListener;
 	private Object initAndStartUpMonitor;
+	private Object initLock;
 
 	/**
 	 * (1) Every AppThread will have a map of proxy service implementation in
@@ -73,19 +74,19 @@ public abstract class FloodlightModuleRunnable implements Runnable, IFloodlightM
 	 * 
 	 */
 
-	public void initInternal(FloodlightModuleContext cntx, Object monitor) {
+	public void initInternal(FloodlightModuleContext cntx, DelegateSanitizer sanitizer, Object monitor, Object initLock) {
 		//this.app = module;
 		this.initAndStartUpMonitor = monitor;
-		
+		this.initLock = initLock;
 		this.moduleContextDelegate = new FloodlightModuleContext();
 		
 		Collection<Class<? extends IFloodlightService>> dependences = this.getModuleDependencies();
 		for(Class<? extends IFloodlightService> c : dependences) {
 			IFloodlightService s = cntx.getServiceImpl(c);
 			
-			// TODO: Sanitize service
-			
-			moduleContextDelegate.addService(c, s);
+			// Sanitize service			
+			IFloodlightService ss = sanitizer.sanitize(s, this);
+			moduleContextDelegate.addService(c, ss);
 		}
 		
 		// Init event queue
@@ -123,8 +124,11 @@ public abstract class FloodlightModuleRunnable implements Runnable, IFloodlightM
 		OFEvent event;
 		
 		// initialize the module internal data
-		synchronized(initAndStartUpMonitor) {
+		synchronized (initAndStartUpMonitor) {
 			try {
+				synchronized (initLock) {
+					initLock.notifyAll();
+				}
 				initAndStartUpMonitor.wait();
 			} catch (InterruptedException e) {
 				logger.debug("InterruptedException: {}", e);
@@ -133,8 +137,11 @@ public abstract class FloodlightModuleRunnable implements Runnable, IFloodlightM
 		initEx();
 
 		// start up app external dependences
-		synchronized(initAndStartUpMonitor) {
+		synchronized (initAndStartUpMonitor) {
 			try {
+				synchronized (initLock) {
+					initLock.notifyAll();
+				}
 				initAndStartUpMonitor.wait();
 			} catch (InterruptedException e) {
 				logger.debug("InterruptedException: {}", e);

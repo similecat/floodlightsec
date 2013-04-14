@@ -134,6 +134,7 @@ import org.openflow.vendor.nicira.OFRoleVendorData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import chao.floodlightcontroller.safethread.DelegateSanitizer;
 import chao.floodlightcontroller.safethread.FloodlightModuleRunnable;
 import chao.floodlightcontroller.safethread.message.OFEvent;
 import chao.floodlightcontroller.safethread.message.OFEventResponse;
@@ -145,14 +146,12 @@ import chao.floodlightcontroller.safethread.message.OFMessageEvent;
 public class Controller implements IFloodlightProviderService,
 		IStorageSourceListener {
 
-	// Added by Chao
-	public Command returnCommand;
-
 	protected static Logger log = LoggerFactory.getLogger(Controller.class);
 
 	private static final String ERROR_DATABASE = "The controller could not communicate with the system database.";
 
-	public static KernelDeputy deputy;
+	public KernelDeputy deputy;
+	public DelegateSanitizer sanitizer;
 
 	protected BasicFactory factory;
 	protected ConcurrentMap<OFType, ListenerDispatcher<OFType, IOFMessageListener>> messageListeners;
@@ -2016,6 +2015,10 @@ public class Controller implements IFloodlightProviderService,
 		this.roleChanger = new RoleChanger();
 		initVendorMessages();
 		this.systemStartTime = System.currentTimeMillis();
+		
+		this.deputy = new KernelDeputy();
+		this.sanitizer = new DelegateSanitizer(deputy.getId2ObjectMap(), deputy.getApiRequestQueueWriter());
+		new Thread(this.deputy).start();
 	}
 
 	/**

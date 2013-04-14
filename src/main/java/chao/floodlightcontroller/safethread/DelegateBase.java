@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import net.floodlightcontroller.core.module.IFloodlightService;
 import net.floodlightcontroller.util.QueueReader;
 import net.floodlightcontroller.util.QueueWriter;
 
@@ -16,7 +17,7 @@ import chao.floodlightcontroller.safethread.message.ApiResponse;
  * @author shichao, Xitao Wen
  * 
  */
-public abstract class DelegateBase {
+public abstract class DelegateBase implements IFloodlightService {
 
 	protected final long id; // Object ID assigned by kernel
 	protected final FloodlightModuleRunnable app; // Associated app
