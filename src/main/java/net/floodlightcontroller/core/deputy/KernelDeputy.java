@@ -1,19 +1,29 @@
 package net.floodlightcontroller.core.deputy;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import chao.floodlightcontroller.safethread.message.ApiRequest;
+import chao.floodlightcontroller.safethread.message.ApiResponse;
 
 import net.floodlightcontroller.util.QueueReader;
 import net.floodlightcontroller.util.QueueWriter;
+import net.floodlightcontroller.core.module.FloodlightModuleLoader;
 
 public class KernelDeputy implements Runnable {
 	protected final QueueReader<ApiRequest> apiRequestQueueReader;
 	protected final QueueWriter<ApiRequest> apiRequestQueueWriter; // Shared with ProxySanitizer
 	protected final Map<Long, Object> id2ObjectMap;  // Shared with ProxySanitizer
+	protected static Logger logger = LoggerFactory
+			.getLogger(FloodlightModuleLoader.class);
 	//public static Object monitor = new Object();	
 	//public static Queue<List<Object>> taskQueue = new ConcurrentLinkedQueue<List<Object>>();
 	
@@ -44,12 +54,70 @@ public class KernelDeputy implements Runnable {
 			ApiRequest task = apiRequestQueueReader.read();
 			while (task!=null) {
 				// Translate request
+				Object obj = this.id2ObjectMap.get(task.getObjectId());
+				List<Object> args = task.getArgs();
+				Class<?>[] argClasses = new Class[args.size()];
+				Method method = null;
+				Object ret = null;
 				
-				// Check permissions
+				for(int i=0;i<args.size();i++) {
+					argClasses[i] = args.get(i).getClass();
+				}
+				
+				// This approach has issue when parameter involves inherited classes
+//				try {
+//					method = obj.getClass().getMethod(task.getMethod(), argClasses);
+//				} catch (SecurityException e) {
+//					method = null;
+//				} catch (NoSuchMethodException e) {
+//					method = null;
+//				}	
+				
+				// Expensive but works
+				for (Method m : obj.getClass().getMethods()) {
+					if (task.getMethod().equals(m.getName())) {
+						boolean matched = true;
+						int count = 0;
+						for (Class<?> c : m.getParameterTypes()) {
+							if (!c.isAssignableFrom(args.get(count++).getClass())) {
+								matched = false;
+								break;
+							}
+						}
+						if (matched == true) {
+							method = m;
+							break;
+						}
+					}
+				}
+				if (method == null) {
+					logger.debug("No method matched: {}.{}()", new Object[]{obj.getClass(), task.getMethod()});
+				}
+				
+				// TODO: Check permissions
 				
 				// Execute request
+				try {
+					if (method != null) {
+						ret = method.invoke(obj, args.toArray());
+					}
+				} catch (IllegalArgumentException e) {
+					logger.debug("Should not reach here: {}", e);
+				} catch (IllegalAccessException e) {
+					logger.debug("Should not reach here: {}", e);
+				} catch (InvocationTargetException e) {
+					logger.debug("Something inside the call goes wrong: {}", e);
+				}	
 				
 				// Send back response if necessary
+				if (task.getQueueWriter() != null) {
+					ApiResponse response = new ApiResponse(
+							task.getObjectId(), task.getMethod(),
+							task.getCaller(), ret);
+
+					task.getQueueWriter().write(response);
+					task.getQueueWriter().notifies();
+				}						
 				
 				task = apiRequestQueueReader.read();
 			}
