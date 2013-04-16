@@ -1,15 +1,15 @@
-package chao.floodlightcontroller.safethread;
+package net.floodlightcontroller.safethread;
 
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import net.floodlightcontroller.core.module.IFloodlightService;
+import net.floodlightcontroller.safethread.message.ApiRequest;
+import net.floodlightcontroller.safethread.message.ApiResponse;
 import net.floodlightcontroller.util.QueueReader;
 import net.floodlightcontroller.util.QueueWriter;
 
-import chao.floodlightcontroller.safethread.message.ApiRequest;
-import chao.floodlightcontroller.safethread.message.ApiResponse;
 
 /**
  * The base class for API proxies. 

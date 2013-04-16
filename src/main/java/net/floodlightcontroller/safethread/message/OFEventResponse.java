@@ -1,4 +1,4 @@
-package chao.floodlightcontroller.safethread.message;
+package net.floodlightcontroller.safethread.message;
 
 import net.floodlightcontroller.core.IListener.Command;
 

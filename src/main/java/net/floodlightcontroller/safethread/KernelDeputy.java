@@ -1,4 +1,4 @@
-package net.floodlightcontroller.core.deputy;
+package net.floodlightcontroller.safethread;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -11,17 +11,20 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import chao.floodlightcontroller.safethread.message.ApiRequest;
-import chao.floodlightcontroller.safethread.message.ApiResponse;
 
+import net.floodlightcontroller.safethread.message.ApiRequest;
+import net.floodlightcontroller.safethread.message.ApiResponse;
 import net.floodlightcontroller.util.QueueReader;
 import net.floodlightcontroller.util.QueueWriter;
+import net.floodlightcontroller.core.internal.Controller;
 import net.floodlightcontroller.core.module.FloodlightModuleLoader;
 
 public class KernelDeputy implements Runnable {
 	protected final QueueReader<ApiRequest> apiRequestQueueReader;
-	protected final QueueWriter<ApiRequest> apiRequestQueueWriter; // Shared with ProxySanitizer
-	protected final Map<Long, Object> id2ObjectMap;  // Shared with ProxySanitizer
+	protected final QueueWriter<ApiRequest> apiRequestQueueWriter; // Shared with DelegateSanitizer
+	protected final Map<Long, Object> id2ObjectMap;  // Shared with DelegateSanitizer
+	protected DelegateSanitizer sanitizer = null;
+	
 	protected static Logger logger = LoggerFactory
 			.getLogger(FloodlightModuleLoader.class);
 	//public static Object monitor = new Object();	
@@ -34,6 +37,10 @@ public class KernelDeputy implements Runnable {
 		apiRequestQueueReader = new QueueReader<ApiRequest>(apiMonitor, apiQueue);
 		
 		id2ObjectMap = new HashMap<Long, Object>();
+	}
+	
+	public void setSanitizer(DelegateSanitizer s) {
+		this.sanitizer = s;
 	}
 	
 	public QueueWriter<ApiRequest> getApiRequestQueueWriter() {
@@ -72,6 +79,12 @@ public class KernelDeputy implements Runnable {
 //				} catch (NoSuchMethodException e) {
 //					method = null;
 //				}	
+				
+				// Some ugly pre-processing
+				if (obj.getClass().equals(Controller.class) && task.getMethod().equals("addOFMessageListener")) {
+					((MessageListenerDelegate)args.get(1)).setSanitizer(this.sanitizer);
+				}
+				
 				
 				// Expensive but works
 				for (Method m : obj.getClass().getMethods()) {

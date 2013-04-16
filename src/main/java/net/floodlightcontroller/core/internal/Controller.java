@@ -35,12 +35,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
-import java.util.Queue;
 import java.util.Set;
 import java.util.Stack;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executors;
@@ -61,7 +59,6 @@ import net.floodlightcontroller.core.IOFSwitchFilter;
 import net.floodlightcontroller.core.IOFSwitchListener;
 import net.floodlightcontroller.core.annotations.LogMessageDoc;
 import net.floodlightcontroller.core.annotations.LogMessageDocs;
-import net.floodlightcontroller.core.deputy.KernelDeputy;
 import net.floodlightcontroller.core.internal.OFChannelState.HandshakeState;
 import net.floodlightcontroller.core.util.ListenerDispatcher;
 import net.floodlightcontroller.core.web.CoreWebRoutable;
@@ -69,14 +66,14 @@ import net.floodlightcontroller.counter.ICounterStoreService;
 import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.perfmon.IPktInProcessingTimeService;
 import net.floodlightcontroller.restserver.IRestApiService;
+import net.floodlightcontroller.safethread.DelegateSanitizer;
+import net.floodlightcontroller.safethread.KernelDeputy;
 import net.floodlightcontroller.storage.IResultSet;
 import net.floodlightcontroller.storage.IStorageSourceListener;
 import net.floodlightcontroller.storage.IStorageSourceService;
 import net.floodlightcontroller.storage.OperatorPredicate;
 import net.floodlightcontroller.storage.StorageException;
 import net.floodlightcontroller.threadpool.IThreadPoolService;
-import net.floodlightcontroller.util.QueueReader;
-import net.floodlightcontroller.util.QueueWriter;
 
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -134,11 +131,6 @@ import org.openflow.vendor.nicira.OFRoleVendorData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import chao.floodlightcontroller.safethread.DelegateSanitizer;
-import chao.floodlightcontroller.safethread.FloodlightModuleRunnable;
-import chao.floodlightcontroller.safethread.message.OFEvent;
-import chao.floodlightcontroller.safethread.message.OFEventResponse;
-import chao.floodlightcontroller.safethread.message.OFMessageEvent;
 
 /**
  * The main controller class. Handles all setup and network listeners
@@ -1257,35 +1249,40 @@ public class Controller implements IFloodlightProviderService,
 						}
 					}
 
+					// Abandoned: event issuing has been moved to MessageListenerDelegate::receive(),
+					// in order to keep the controller code clean.
 					// Listener is registered as FloodlightModuleRunnable
-					if (listener instanceof FloodlightModuleRunnable) {
-						Queue<OFEventResponse> queue = new ConcurrentLinkedQueue<OFEventResponse>();
-						Object monitor = new Object();
-						QueueReader<OFEventResponse> qr = new QueueReader<OFEventResponse>(monitor, queue);
-						QueueWriter<OFEventResponse> qw = new QueueWriter<OFEventResponse>(monitor, queue);
-						FloodlightModuleRunnable app = (FloodlightModuleRunnable) listener;
-						
-						// Conduct sanitizing
-						
-						// Issue event
-						OFEvent t = new OFMessageEvent(qw, app, m, sw, bc);
-						app.eventQueueWriter.write(t);
-						app.eventQueueWriter.notifies();
-						
-						// Wait to obtain return value
-						qr.waits();
-						OFEventResponse r = qr.read();
-						if (r!=null)
-							cmd = r.command;
-						else
-							cmd = Command.CONTINUE;
-
-					} else {
-						pktinProcTime.recordStartTimeComp(listener);
-						cmd = listener.receive(sw, m, bc);
-						pktinProcTime.recordEndTimeComp(listener);
-					}
-
+//					if (listener instanceof FloodlightModuleRunnable) {
+//						Queue<OFEventResponse> queue = new ConcurrentLinkedQueue<OFEventResponse>();
+//						Object monitor = new Object();
+//						QueueReader<OFEventResponse> qr = new QueueReader<OFEventResponse>(monitor, queue);
+//						QueueWriter<OFEventResponse> qw = new QueueWriter<OFEventResponse>(monitor, queue);
+//						FloodlightModuleRunnable app = (FloodlightModuleRunnable) listener;
+//						
+//						// Conduct sanitizing
+//						
+//						// Issue event
+//						OFEvent t = new OFMessageEvent(qw, app, m, sw, bc);
+//						app.eventQueueWriter.write(t);
+//						app.eventQueueWriter.notifies();
+//						
+//						// Wait to obtain return value
+//						qr.waits();
+//						OFEventResponse r = qr.read();
+//						if (r!=null)
+//							cmd = r.command;
+//						else
+//							cmd = Command.CONTINUE;
+//
+//					} else {
+//						pktinProcTime.recordStartTimeComp(listener);
+//						cmd = listener.receive(sw, m, bc);
+//						pktinProcTime.recordEndTimeComp(listener);
+//					}
+					
+					pktinProcTime.recordStartTimeComp(listener);
+					cmd = listener.receive(sw, m, bc);
+					pktinProcTime.recordEndTimeComp(listener);
 					if (Command.STOP.equals(cmd)) {
 						break;
 					}
@@ -2018,6 +2015,7 @@ public class Controller implements IFloodlightProviderService,
 		
 		this.deputy = new KernelDeputy();
 		this.sanitizer = new DelegateSanitizer(deputy.getId2ObjectMap(), deputy.getApiRequestQueueWriter());
+		this.deputy.setSanitizer(this.sanitizer);
 		new Thread(this.deputy).start();
 	}
 

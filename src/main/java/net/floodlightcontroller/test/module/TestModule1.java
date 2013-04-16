@@ -1,4 +1,4 @@
-package chao.floodlightcontroller.test.module;
+package net.floodlightcontroller.test.module;
 
 import java.util.ArrayList;
 import java.util.Collection;

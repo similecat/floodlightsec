@@ -1,9 +1,12 @@
-package chao.floodlightcontroller.safethread;
+package net.floodlightcontroller.safethread.message;
 
 import net.floodlightcontroller.core.FloodlightContext;
 import net.floodlightcontroller.core.IOFSwitch;
+import net.floodlightcontroller.safethread.FloodlightModuleRunnable;
+import net.floodlightcontroller.util.QueueWriter;
 
 import org.openflow.protocol.OFMessage;
+
 
 /**
  * The message for inter-thread communication. It encapsulate the event of
@@ -12,7 +15,8 @@ import org.openflow.protocol.OFMessage;
  * @author shichao
  * 
  */
-public class OFMessageInfo {
+public class OFMessageEvent extends OFEvent{
+	private final FloodlightModuleRunnable receiver;
 	private final OFMessage msg;
 	private final IOFSwitch sw;
 	private final FloodlightContext cntx;
@@ -23,12 +27,18 @@ public class OFMessageInfo {
 	 * @param sw The OFSwitch
 	 * @param cntx The FloodlightContext
 	 */
-	public OFMessageInfo(OFMessage msg, IOFSwitch sw, FloodlightContext cntx) {
+	public OFMessageEvent(QueueWriter<OFEventResponse> qw, FloodlightModuleRunnable receiver, OFMessage msg, IOFSwitch sw, FloodlightContext cntx) {
+		super(OFEvent.Type.OFMessage, qw);
+		this.receiver = receiver;
 		this.msg = msg;
 		this.sw = sw;
 		this.cntx = cntx;
 	}
 
+	public FloodlightModuleRunnable getEventReceiver(){
+		return this.receiver;
+	}
+	
 	public OFMessage getOFMessage() {
 		return msg;
 	}

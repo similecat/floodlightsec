@@ -1,19 +1,21 @@
-package chao.floodlightcontroller.safethread;
+package net.floodlightcontroller.safethread;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.openflow.protocol.OFMessage;
 import org.openflow.protocol.OFType;
 
-import chao.floodlightcontroller.safethread.message.OFEvent;
-import chao.floodlightcontroller.safethread.message.OFEventResponse;
-import chao.floodlightcontroller.safethread.message.OFMessageEvent;
 
 import net.floodlightcontroller.core.FloodlightContext;
 import net.floodlightcontroller.core.IOFMessageListener;
 import net.floodlightcontroller.core.IOFSwitch;
 import net.floodlightcontroller.core.module.IFloodlightModule;
+import net.floodlightcontroller.safethread.message.OFEvent;
+import net.floodlightcontroller.safethread.message.OFEventResponse;
+import net.floodlightcontroller.safethread.message.OFMessageEvent;
 import net.floodlightcontroller.util.QueueReader;
 import net.floodlightcontroller.util.QueueWriter;
 
@@ -24,39 +26,65 @@ import net.floodlightcontroller.util.QueueWriter;
  * @author Xitao Wen
  * 
  */
-public class MessageListenerDelegate implements IOFMessageListener {
+public class MessageListenerDelegate implements IOFMessageListener {	
+	private static final Map<IOFMessageListener, IOFMessageListener> real2delegateMap = 
+			new HashMap<IOFMessageListener, IOFMessageListener>();	
+	private static final Map<IOFMessageListener, IOFMessageListener> delegate2realMap = 
+			new HashMap<IOFMessageListener, IOFMessageListener>();
+
 	private final IOFMessageListener realListener;
 	private final FloodlightModuleRunnable app;
 
-	// TODO: Implement sanitizer
-	// private DelegateSanitizer sanitizer;
+	// KernelDeputy installs the sanitizer before sends to controller 
+	private DelegateSanitizer sanitizer;
 
 	MessageListenerDelegate(IOFMessageListener l, IFloodlightModule app) {
 		this.realListener = l;
 		if (app instanceof FloodlightModuleRunnable) {
 			this.app = (FloodlightModuleRunnable) app;
 		} else {
+			// Invalid listener
 			this.app = null;
 		}
+		
+		real2delegateMap.put(l, this);
+		delegate2realMap.put(this, l);
+	}
+	
+	/**
+	 * Class method to get the real listener from the listener delegate.
+	 * @param delegate
+	 * @return
+	 */
+	public static IOFMessageListener getRealListener(IOFMessageListener delegate) {
+		return delegate2realMap.get(delegate);
 	}
 
-	// TODO: Implement sanitizer
-	// public void setSanitizer(DelegateSanitizer s) {
-	// sanitizer = s;
-	// }
+	public static IOFMessageListener getListenerDelegate(IOFMessageListener real) {
+		return real2delegateMap.get(real);
+	}
+
+	// Implement sanitizer
+	public void setSanitizer(DelegateSanitizer s) {
+		sanitizer = s;
+	}
 
 	@Override
 	public String getName() {
+		// Pass-through for performance. It may have code privilege escalation
+		// issue.
 		return realListener.getName();
 	}
 
 	@Override
 	public boolean isCallbackOrderingPrereq(OFType type, String name) {
+		// Pass-through for performance
 		return realListener.isCallbackOrderingPrereq(type, name);
 	}
 
 	@Override
 	public boolean isCallbackOrderingPostreq(OFType type, String name) {
+		// Pass-through for performance
 		return realListener.isCallbackOrderingPostreq(type, name);
 	}
 
@@ -66,6 +94,9 @@ public class MessageListenerDelegate implements IOFMessageListener {
 		// TODO: Permission check
 
 		// TODO: Sanitize parameters
+		IOFSwitch swApp = sanitizer.getOFSwitchDelegate(sw, app);
+		OFMessage msgApp = sanitizer.sanitizeOFMessage(msg, app);
+		FloodlightContext cntxApp = sanitizer.sanitizeFloodlightContext(cntx, app);
 
 		// Notify app through inter-thread communication
 		Object retMonitor = new Object();
@@ -74,7 +105,7 @@ public class MessageListenerDelegate implements IOFMessageListener {
 				retMonitor, retQueue);
 		QueueReader<OFEventResponse> retReader = new QueueReader<OFEventResponse>(
 				retMonitor, retQueue);
-		OFEvent t = new OFMessageEvent(retWriter, app, msg, sw, cntx);
+		OFEvent t = new OFMessageEvent(retWriter, app, msgApp, swApp, cntxApp);
 
 		app.eventQueueWriter.write(t);
 		app.eventQueueWriter.notifies();
@@ -83,7 +114,11 @@ public class MessageListenerDelegate implements IOFMessageListener {
 		retReader.waits();
 		OFEventResponse response = retReader.read();
 
-		return response.command;
+		if (response == null) {
+			return Command.CONTINUE;
+		} else {
+			return response.command;
+		}
 	}
 
 }

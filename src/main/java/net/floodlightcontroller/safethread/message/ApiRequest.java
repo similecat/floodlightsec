@@ -1,9 +1,9 @@
-package chao.floodlightcontroller.safethread.message;
+package net.floodlightcontroller.safethread.message;
 
 import java.util.List;
 
-import chao.floodlightcontroller.safethread.FloodlightModuleRunnable;
 
+import net.floodlightcontroller.safethread.FloodlightModuleRunnable;
 import net.floodlightcontroller.util.QueueWriter;
 
 /**

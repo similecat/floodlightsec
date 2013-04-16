@@ -1,4 +1,4 @@
-package chao.floodlightcontroller.safethread;
+package net.floodlightcontroller.safethread;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -16,16 +16,16 @@ import org.openflow.protocol.OFStatisticsRequest;
 import org.openflow.protocol.statistics.OFDescriptionStatistics;
 import org.openflow.protocol.statistics.OFStatistics;
 
-import chao.floodlightcontroller.safethread.message.ApiRequest;
 import net.floodlightcontroller.core.FloodlightContext;
 import net.floodlightcontroller.core.IOFMessageListener;
 import net.floodlightcontroller.core.IOFSwitch;
 import net.floodlightcontroller.core.IFloodlightProviderService.Role;
+import net.floodlightcontroller.safethread.message.ApiRequest;
 import net.floodlightcontroller.util.QueueWriter;
 
-public class SwitchDelegate extends DelegateBase implements IOFSwitch {
+public class OFSwitchDelegate extends DelegateBase implements IOFSwitch {
 	
-	public SwitchDelegate(long id, FloodlightModuleRunnable app, QueueWriter<ApiRequest> qw) {
+	public OFSwitchDelegate(long id, FloodlightModuleRunnable app, QueueWriter<ApiRequest> qw) {
 		super(id, app, qw);
 	}
 	

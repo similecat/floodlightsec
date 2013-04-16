@@ -1,6 +1,6 @@
-package chao.floodlightcontroller.safethread.message;
+package net.floodlightcontroller.safethread.message;
 
-import chao.floodlightcontroller.safethread.FloodlightModuleRunnable;
+import net.floodlightcontroller.safethread.FloodlightModuleRunnable;
 
 /**
  * The class for the inter-thread communication, the format of Api Call response Base Class

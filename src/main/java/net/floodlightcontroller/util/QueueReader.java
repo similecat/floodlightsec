@@ -3,7 +3,7 @@ package net.floodlightcontroller.util;
 import java.util.Queue;
 
 public class QueueReader<T> {
-	public static final long TIMEOUT = 2000;
+	public static final long TIMEOUT = 500;
 	private final Object monitor;
 	private final Queue<T> queue;
 	
@@ -11,7 +11,7 @@ public class QueueReader<T> {
 		monitor = m;
 		queue = q;
 	}
-	
+
 	/**
 	 * Wait until being notified or timeout or interrupted.
 	 */
@@ -19,6 +19,20 @@ public class QueueReader<T> {
 		synchronized(monitor) {
 			try {
 				monitor.wait(QueueReader.TIMEOUT);
+			} catch (InterruptedException e) {
+				// throw(e);
+				return;
+			}
+		}
+	}
+	
+	/**
+	 * Wait until being notified or timeout or interrupted.
+	 */
+	public void waitsNoTimeout() {
+		synchronized(monitor) {
+			try {
+				monitor.wait();
 			} catch (InterruptedException e) {
 				// throw(e);
 				return;

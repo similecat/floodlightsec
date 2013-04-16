@@ -17,6 +17,7 @@
 
 package net.floodlightcontroller.hub;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -30,6 +31,7 @@ import net.floodlightcontroller.core.module.FloodlightModuleContext;
 import net.floodlightcontroller.core.module.FloodlightModuleException;
 import net.floodlightcontroller.core.module.IFloodlightModule;
 import net.floodlightcontroller.core.module.IFloodlightService;
+import net.floodlightcontroller.safethread.FloodlightModuleRunnable;
 
 import org.openflow.protocol.OFMessage;
 import org.openflow.protocol.OFPacketIn;
@@ -42,7 +44,6 @@ import org.openflow.util.U16;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import chao.floodlightcontroller.safethread.FloodlightModuleRunnable;
 
 /**
  * 
@@ -96,6 +97,13 @@ public class Hub extends FloodlightModuleRunnable implements IFloodlightModule, 
 //		} catch (IOException e) {
 //			log.error("Failure writing PacketOut", e);
 //		}
+		
+		try {
+			//log.debug("Sent po: {}", po);
+			sw.write(po, cntx);
+		} catch (IOException e) {
+			log.error("Failure writing PacketOut", e);
+		}
 
 		return Command.CONTINUE;
 	}

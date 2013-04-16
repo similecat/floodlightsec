@@ -24,12 +24,12 @@ import net.floodlightcontroller.core.FloodlightProvider;
 import net.floodlightcontroller.core.annotations.LogMessageDoc;
 import net.floodlightcontroller.core.annotations.LogMessageDocs;
 import net.floodlightcontroller.core.internal.Controller;
+import net.floodlightcontroller.safethread.DelegateSanitizer;
+import net.floodlightcontroller.safethread.FloodlightModuleRunnable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import chao.floodlightcontroller.safethread.DelegateSanitizer;
-import chao.floodlightcontroller.safethread.FloodlightModuleRunnable;
 
 /**
  * Finds all Floodlight modules in the class path and loads/starts them.

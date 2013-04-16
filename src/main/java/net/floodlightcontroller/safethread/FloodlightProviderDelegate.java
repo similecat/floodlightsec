@@ -1,4 +1,4 @@
-package chao.floodlightcontroller.safethread;
+package net.floodlightcontroller.safethread;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -9,7 +9,6 @@ import org.openflow.protocol.OFMessage;
 import org.openflow.protocol.OFType;
 import org.openflow.protocol.factory.BasicFactory;
 
-import chao.floodlightcontroller.safethread.message.ApiRequest;
 import net.floodlightcontroller.core.FloodlightContext;
 import net.floodlightcontroller.core.IFloodlightProviderService;
 import net.floodlightcontroller.core.IHAListener;
@@ -17,6 +16,7 @@ import net.floodlightcontroller.core.IInfoProvider;
 import net.floodlightcontroller.core.IOFMessageListener;
 import net.floodlightcontroller.core.IOFSwitch;
 import net.floodlightcontroller.core.IOFSwitchListener;
+import net.floodlightcontroller.safethread.message.ApiRequest;
 import net.floodlightcontroller.util.QueueWriter;
 
 /**
@@ -44,7 +44,8 @@ public class FloodlightProviderDelegate extends DelegateBase implements
 	// module.
 	// A map representing the catogery of listeners you are proxy of!
 
-	public FloodlightProviderDelegate(long id, FloodlightModuleRunnable app, QueueWriter<ApiRequest> qw) {
+	public FloodlightProviderDelegate(long id, FloodlightModuleRunnable app,
+			QueueWriter<ApiRequest> qw) {
 		super(id, app, qw);
 		factory = new BasicFactory();
 	}
@@ -59,12 +60,19 @@ public class FloodlightProviderDelegate extends DelegateBase implements
 	 */
 	@Override
 	public void addOFMessageListener(OFType type, IOFMessageListener listener) {
-		apiRequestAsync("addOFMessageListener", Arrays.asList(type,this.app));
+//		apiRequestAsync("addOFMessageListener", Arrays.asList(type,this.app));
+		IOFMessageListener delegate = new MessageListenerDelegate(listener, app);
+		app.setListener(delegate);
+		apiRequestAsync("addOFMessageListener",
+				Arrays.asList(type, delegate));
 	}
 
 	@Override
 	public void removeOFMessageListener(OFType type, IOFMessageListener listener) {
-		apiRequestAsync("removeOFMessageListener", Arrays.asList(type, listener));
+		apiRequestAsync(
+				"removeOFMessageListener",
+				Arrays.asList(type,
+						MessageListenerDelegate.getListenerDelegate(listener)));
 	}
 
 

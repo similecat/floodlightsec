@@ -1,4 +1,4 @@
-package chao.floodlightcontroller.safethread;
+package net.floodlightcontroller.safethread;
 
 import java.util.Collection;
 import java.util.Queue;
@@ -14,12 +14,12 @@ import net.floodlightcontroller.core.module.FloodlightModuleException;
 import net.floodlightcontroller.core.module.FloodlightModuleLoader;
 import net.floodlightcontroller.core.module.IFloodlightModule;
 import net.floodlightcontroller.core.module.IFloodlightService;
+import net.floodlightcontroller.safethread.message.OFEvent;
+import net.floodlightcontroller.safethread.message.OFEventResponse;
+import net.floodlightcontroller.safethread.message.OFMessageEvent;
 import net.floodlightcontroller.util.QueueReader;
 import net.floodlightcontroller.util.QueueWriter;
 
-import chao.floodlightcontroller.safethread.message.OFEvent;
-import chao.floodlightcontroller.safethread.message.OFEventResponse;
-import chao.floodlightcontroller.safethread.message.OFMessageEvent;
 
 /**
  * FloodlightModuleRunnable mainly runs in app space except the constructor.
@@ -170,7 +170,8 @@ public abstract class FloodlightModuleRunnable implements Runnable, IFloodlightM
 		Command cmd;
 		
 		if (event instanceof OFMessageEvent) {
-			cmd = messageListener.receive(((OFMessageEvent) event).getOFSwitch(),
+			IOFMessageListener real = MessageListenerDelegate.getRealListener(messageListener);
+			cmd = real.receive(((OFMessageEvent) event).getOFSwitch(),
 					((OFMessageEvent) event).getOFMessage(),
 					((OFMessageEvent) event).getFloodlightContext());
 		}
