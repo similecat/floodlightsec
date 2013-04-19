@@ -260,8 +260,8 @@ public class OFSwitchDelegate extends DelegateBase implements IOFSwitch {
 
 	@Override
 	public Object getAttribute(String name) {
-		// TODO Auto-generated method stub
-		return null;
+		Object ret = this.apiRequestSync("getAttribute", Arrays.asList((Object)name));
+		return ret;
 	}
 
 	@Override

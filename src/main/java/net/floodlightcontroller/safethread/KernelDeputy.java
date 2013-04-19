@@ -68,7 +68,12 @@ public class KernelDeputy implements Runnable {
 				Object ret = null;
 				
 				for(int i=0;i<args.size();i++) {
-					argClasses[i] = args.get(i).getClass();
+					if (args.get(i) != null) {
+						argClasses[i] = args.get(i).getClass();
+					}
+					else {
+						argClasses[i] = null;
+					}
 				}
 				
 				// This approach has issue when parameter involves inherited classes
@@ -92,7 +97,7 @@ public class KernelDeputy implements Runnable {
 						boolean matched = true;
 						int count = 0;
 						for (Class<?> c : m.getParameterTypes()) {
-							if (!c.isAssignableFrom(args.get(count++).getClass())) {
+							if (argClasses[count]!=null && !c.isAssignableFrom(argClasses[count++])) {
 								matched = false;
 								break;
 							}

@@ -51,6 +51,7 @@ import net.floodlightcontroller.core.types.MacVlanPair;
 import net.floodlightcontroller.counter.ICounterStoreService;
 import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.restserver.IRestApiService;
+import net.floodlightcontroller.safethread.FloodlightModuleRunnable;
 
 import org.openflow.protocol.OFError;
 import org.openflow.protocol.OFFlowMod;
@@ -69,6 +70,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class LearningSwitch 
+	extends FloodlightModuleRunnable
     implements IFloodlightModule, ILearningSwitchService, IOFMessageListener {
     protected static Logger log = LoggerFactory.getLogger(LearningSwitch.class);
     
@@ -255,6 +257,7 @@ public class LearningSwitch
         
         // and write it out
         try {
+        	log.debug("Sent flowMod {}", flowMod);
             sw.write(flowMod, null);
         } catch (IOException e) {
             log.error("Failed to write {} to switch {}", new Object[]{ flowMod, sw }, e);
@@ -348,6 +351,7 @@ public class LearningSwitch
             // XXX For LearningSwitch this doesn't do much. The sourceMac is removed
             //     from port map whenever a flow expires, so you would still see
             //     a lot of floods.
+        	log.debug("Flooding {}", pi);
             this.writePacketOutForPacketIn(sw, pi, OFPort.OFPP_FLOOD.getValue());
         } else if (outPort == match.getInputPort()) {
             log.trace("ignoring packet that arrived on same port as learned destination:"
