@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.openflow.protocol.OFMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.floodlightcontroller.core.FloodlightContext;
 import net.floodlightcontroller.core.IFloodlightProviderService;
@@ -12,10 +14,15 @@ import net.floodlightcontroller.core.IOFSwitch;
 import net.floodlightcontroller.core.internal.Controller;
 import net.floodlightcontroller.core.internal.OFSwitchImpl;
 import net.floodlightcontroller.core.module.FloodlightModuleContext;
+import net.floodlightcontroller.core.module.FloodlightModuleLoader;
 import net.floodlightcontroller.core.module.IFloodlightService;
 import net.floodlightcontroller.counter.ICounterStoreService;
+import net.floodlightcontroller.devicemanager.IDeviceService;
+import net.floodlightcontroller.devicemanager.internal.DeviceManagerImpl;
 import net.floodlightcontroller.restserver.IRestApiService;
 import net.floodlightcontroller.safethread.message.ApiRequest;
+import net.floodlightcontroller.storage.AbstractStorageSource;
+import net.floodlightcontroller.storage.IStorageSourceService;
 import net.floodlightcontroller.util.QueueWriter;
 
 /**
@@ -35,6 +42,9 @@ public class DelegateSanitizer {
 	private final QueueWriter<ApiRequest> apiRequestQueueWriter; // Shared with KernelDeputy
 	
 	private long idBase;
+	
+	protected static Logger logger = LoggerFactory
+			.getLogger(FloodlightModuleLoader.class);
 
 	class Pair<A, B> {
 	    private A first;
@@ -128,7 +138,7 @@ public class DelegateSanitizer {
 		return this.id2DelegateMap.get(id);
 	}
 
-	public FloodlightProviderDelegate getFloodlightProviderDelegate(
+	private FloodlightProviderDelegate getFloodlightProviderDelegate(
 			IFloodlightProviderService iprovider, FloodlightModuleRunnable app) {
 		FloodlightProviderDelegate delegate;
 		
@@ -153,6 +163,55 @@ public class DelegateSanitizer {
 		return delegate;
 	}
 
+	private IFloodlightService getStorageSourceDelegate(
+			IStorageSourceService s, FloodlightModuleRunnable app) {
+		StorageSourceDelegate delegate;
+		
+		if (s instanceof StorageSourceDelegate) {
+			s = (StorageSourceDelegate) this.getObject(
+					((StorageSourceDelegate) s).getObjectId());
+		} else if (!(s instanceof AbstractStorageSource))
+			return null;
+		
+		Long id = getIdWithObject(s, app);
+		if (id==null) {
+			// no hit
+			id = idBase++;
+			delegate = new StorageSourceDelegate(
+					id, app, this.apiRequestQueueWriter);
+			this.insertObject(id, s, delegate, app);
+		} else {
+			// hit
+			delegate = (StorageSourceDelegate) this.getDelegate(id);
+		}
+		
+		return delegate;
+	}
+
+	private IFloodlightService getDeviceDelegate(IDeviceService s,
+			FloodlightModuleRunnable app) {
+		DeviceDelegate delegate;
+		
+		if (s instanceof DeviceDelegate) {
+			s = (DeviceDelegate) this.getObject(((DeviceDelegate)s).getObjectId());
+		} else if (!(s instanceof DeviceManagerImpl)) {
+			return null;
+		}
+		
+		Long id = getIdWithObject(s, app);
+		if (id==null) {
+			// no hit
+			id = idBase++;
+			delegate = new DeviceDelegate(
+					id, app, this.apiRequestQueueWriter);
+			this.insertObject(id, s, delegate, app);
+		} else {
+			// hit
+			delegate = (DeviceDelegate) this.getDelegate(id);
+		}
+		return delegate;
+	}
+
 	public FloodlightModuleContext getFloodlightModuleContextDelegate(
 			FloodlightModuleContext cntx, FloodlightModuleRunnable app) {
 		FloodlightModuleContext ret = new FloodlightModuleContext();
@@ -172,6 +231,13 @@ public class DelegateSanitizer {
 			return this.getFloodlightProviderDelegate(
 					(IFloodlightProviderService) s, app);
 		} 
+		else if (s instanceof IStorageSourceService) {
+			return this.getStorageSourceDelegate(
+					(IStorageSourceService) s, app);
+		}
+		else if (s instanceof IDeviceService) {
+			return this.getDeviceDelegate((IDeviceService) s, app);
+		}
 		else if (s instanceof ICounterStoreService) {
 			// Pass through CounterStoreService 
 			return s;
@@ -182,6 +248,7 @@ public class DelegateSanitizer {
 			return s;
 		}
 		else {
+			logger.debug("Service {} is not supported yet.", s);
 			return null;
 		}
 	}

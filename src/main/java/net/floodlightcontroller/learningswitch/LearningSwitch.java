@@ -257,7 +257,7 @@ public class LearningSwitch
         
         // and write it out
         try {
-        	log.debug("Sent flowMod {}", flowMod);
+        	//log.debug("Sent flowMod {}", flowMod);
             sw.write(flowMod, null);
         } catch (IOException e) {
             log.error("Failed to write {} to switch {}", new Object[]{ flowMod, sw }, e);
@@ -351,7 +351,7 @@ public class LearningSwitch
             // XXX For LearningSwitch this doesn't do much. The sourceMac is removed
             //     from port map whenever a flow expires, so you would still see
             //     a lot of floods.
-        	log.debug("Flooding {}", pi);
+        	//log.debug("Flooding {}", pi);
             this.writePacketOutForPacketIn(sw, pi, OFPort.OFPP_FLOOD.getValue());
         } else if (outPort == match.getInputPort()) {
             log.trace("ignoring packet that arrived on same port as learned destination:"

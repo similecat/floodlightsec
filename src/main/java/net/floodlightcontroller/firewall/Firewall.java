@@ -28,6 +28,7 @@ import net.floodlightcontroller.packet.IPv4;
 import net.floodlightcontroller.restserver.IRestApiService;
 import net.floodlightcontroller.routing.IRoutingDecision;
 import net.floodlightcontroller.routing.RoutingDecision;
+import net.floodlightcontroller.safethread.FloodlightModuleRunnable;
 import net.floodlightcontroller.storage.IResultSet;
 import net.floodlightcontroller.storage.IStorageSourceService;
 import net.floodlightcontroller.storage.StorageException;
@@ -42,8 +43,8 @@ import org.slf4j.LoggerFactory;
  * @author Amer Tahir
  * @edited KC Wang
  */
-public class Firewall implements IFirewallService, IOFMessageListener,
-        IFloodlightModule {
+public class Firewall extends FloodlightModuleRunnable 
+		implements IFirewallService, IOFMessageListener, IFloodlightModule {
 
     // service modules needed
     protected IFloodlightProviderService floodlightProvider;
@@ -328,7 +329,10 @@ public class Firewall implements IFirewallService, IOFMessageListener,
         logger = LoggerFactory.getLogger(Firewall.class);
 
         // start disabled
-        enabled = false;
+        // enabled = false;
+        
+        // enable for test
+        enabled = true;
     }
 
     @Override

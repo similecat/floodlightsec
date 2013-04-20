@@ -87,6 +87,18 @@ public class FloodlightProviderDelegate extends DelegateBase implements
 			return (Map<Long, IOFSwitch>) r;
 		}
 	}
+	
+	@Override
+	public BasicFactory getOFMessageFactory() {
+		/**
+		 * Now only do the original registration
+		 */
+		return factory;
+	}
+	
+//////////////////////////////////////////////////
+//Interface methods that haven't been supported
+//////////////////////////////////////////////////
 
 	@Override
 	public Role getRole() {
@@ -160,14 +172,6 @@ public class FloodlightProviderDelegate extends DelegateBase implements
 			FloodlightContext bc) {
 		// TODO Auto-generated method stub
 
-	}
-
-	@Override
-	public BasicFactory getOFMessageFactory() {
-		/**
-		 * Now only do the original registration
-		 */
-		return factory;
 	}
 
 	@Override

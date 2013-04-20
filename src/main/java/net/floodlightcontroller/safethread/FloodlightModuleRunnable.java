@@ -84,7 +84,7 @@ public abstract class FloodlightModuleRunnable implements Runnable, IFloodlightM
 		for(Class<? extends IFloodlightService> c : dependences) {
 			IFloodlightService s = cntx.getServiceImpl(c);
 			
-			// Sanitize service			
+			// Provide app with sanitized services			
 			IFloodlightService ss = sanitizer.sanitize(s, this);
 			moduleContextDelegate.addService(c, ss);
 		}

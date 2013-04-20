@@ -41,6 +41,7 @@ import net.floodlightcontroller.packet.IPacket;
 import net.floodlightcontroller.packet.IPv4;
 import net.floodlightcontroller.restserver.IRestApiService;
 import net.floodlightcontroller.routing.ForwardingBase;
+import net.floodlightcontroller.safethread.FloodlightModuleRunnable;
 import net.floodlightcontroller.util.MACAddress;
 
 /**
@@ -56,7 +57,7 @@ import net.floodlightcontroller.util.MACAddress;
  * 
  * @author alexreimers
  */
-public class VirtualNetworkFilter 
+public class VirtualNetworkFilter extends FloodlightModuleRunnable
     implements IFloodlightModule, IVirtualNetworkService, IOFMessageListener, IDeviceListener {
     protected static Logger log = LoggerFactory.getLogger(VirtualNetworkFilter.class);
     
