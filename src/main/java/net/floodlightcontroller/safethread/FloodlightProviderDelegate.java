@@ -62,7 +62,7 @@ public class FloodlightProviderDelegate extends DelegateBase implements
 	public void addOFMessageListener(OFType type, IOFMessageListener listener) {
 //		apiRequestAsync("addOFMessageListener", Arrays.asList(type,this.app));
 		IOFMessageListener delegate = new MessageListenerDelegate(listener, app);
-		app.setListener(delegate);
+		app.setMessageListener(delegate);
 		apiRequestAsync("addOFMessageListener",
 				Arrays.asList(type, delegate));
 	}

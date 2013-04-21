@@ -38,6 +38,7 @@ public class MessageListenerDelegate implements IOFMessageListener {
 	// KernelDeputy installs the sanitizer before sends to controller 
 	private DelegateSanitizer sanitizer;
 
+	// Only visible within safethread package
 	MessageListenerDelegate(IOFMessageListener l, IFloodlightModule app) {
 		this.realListener = l;
 		if (app instanceof FloodlightModuleRunnable) {
@@ -93,7 +94,7 @@ public class MessageListenerDelegate implements IOFMessageListener {
 			IOFSwitch sw, OFMessage msg, FloodlightContext cntx) {
 		// TODO: Permission check
 
-		// TODO: Sanitize parameters
+		// Sanitize parameters
 		IOFSwitch swApp = sanitizer.getOFSwitchDelegate(sw, app);
 		OFMessage msgApp = sanitizer.sanitizeOFMessage(msg, app);
 		FloodlightContext cntxApp = sanitizer.sanitizeFloodlightContext(cntx, app);

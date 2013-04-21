@@ -37,19 +37,6 @@ public class StorageSourceDelegate extends DelegateBase implements IStorageSourc
 	}
 
 	@Override
-	public Set<String> getAllTableNames() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public IQuery createQuery(String tableName, String[] columnNames,
-			IPredicate predicate, RowOrdering ordering) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
 	public IResultSet executeQuery(IQuery query) {
 		Object r = apiRequestSync("executeQuery",
 				Arrays.asList((Object)query));
@@ -72,6 +59,23 @@ public class StorageSourceDelegate extends DelegateBase implements IStorageSourc
 		else {
 			return (IResultSet) r;
 		}
+	}
+	
+//////////////////////////////////////////////////
+//Interface methods that haven't been supported
+//////////////////////////////////////////////////
+
+	@Override
+	public Set<String> getAllTableNames() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public IQuery createQuery(String tableName, String[] columnNames,
+			IPredicate predicate, RowOrdering ordering) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	@Override

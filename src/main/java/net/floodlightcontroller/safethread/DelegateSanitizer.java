@@ -17,12 +17,16 @@ import net.floodlightcontroller.core.module.FloodlightModuleContext;
 import net.floodlightcontroller.core.module.FloodlightModuleLoader;
 import net.floodlightcontroller.core.module.IFloodlightService;
 import net.floodlightcontroller.counter.ICounterStoreService;
+import net.floodlightcontroller.devicemanager.IDevice;
 import net.floodlightcontroller.devicemanager.IDeviceService;
+import net.floodlightcontroller.devicemanager.internal.Device;
 import net.floodlightcontroller.devicemanager.internal.DeviceManagerImpl;
 import net.floodlightcontroller.restserver.IRestApiService;
+import net.floodlightcontroller.routing.IRoutingService;
 import net.floodlightcontroller.safethread.message.ApiRequest;
 import net.floodlightcontroller.storage.AbstractStorageSource;
 import net.floodlightcontroller.storage.IStorageSourceService;
+import net.floodlightcontroller.topology.TopologyManager;
 import net.floodlightcontroller.util.QueueWriter;
 
 /**
@@ -212,6 +216,30 @@ public class DelegateSanitizer {
 		return delegate;
 	}
 
+	private IFloodlightService getRoutingDelegate(IRoutingService s,
+			FloodlightModuleRunnable app) {
+		RoutingDelegate delegate;
+		
+		if (s instanceof RoutingDelegate) {
+			s = (RoutingDelegate) this.getObject(((RoutingDelegate)s).getObjectId());
+		} else if (!(s instanceof TopologyManager)) {
+			return null;
+		}
+		
+		Long id = getIdWithObject(s, app);
+		if (id==null) {
+			// no hit
+			id = idBase++;
+			delegate = new RoutingDelegate(
+					id, app, this.apiRequestQueueWriter);
+			this.insertObject(id, s, delegate, app);
+		} else {
+			// hit
+			delegate = (RoutingDelegate) this.getDelegate(id);
+		}
+		return delegate;
+	}
+
 	public FloodlightModuleContext getFloodlightModuleContextDelegate(
 			FloodlightModuleContext cntx, FloodlightModuleRunnable app) {
 		FloodlightModuleContext ret = new FloodlightModuleContext();
@@ -237,6 +265,9 @@ public class DelegateSanitizer {
 		}
 		else if (s instanceof IDeviceService) {
 			return this.getDeviceDelegate((IDeviceService) s, app);
+		}
+		else if (s instanceof IRoutingService) {
+			return this.getRoutingDelegate((IRoutingService) s, app);
 		}
 		else if (s instanceof ICounterStoreService) {
 			// Pass through CounterStoreService 
@@ -272,6 +303,30 @@ public class DelegateSanitizer {
 		} else {
 			// hit
 			delegate = (OFSwitchDelegate) this.getDelegate(id);
+		}
+		
+		return delegate;
+	}
+
+	public IDevice getDeviceEntityDelegate(IDevice device,
+			FloodlightModuleRunnable app) {
+		if (device instanceof DeviceEntityDelegate) {
+			device = (IDevice) this.getObject(((DeviceEntityDelegate) device)
+					.getObjectId());
+		} else if (!(device instanceof Device))
+			return null;
+
+		DeviceEntityDelegate delegate;
+		Long id = getIdWithObject(device, app);
+		if (id==null) {
+			// no hit
+			id = idBase++;
+			delegate = new DeviceEntityDelegate(id, app,
+					this.apiRequestQueueWriter, device);
+			this.insertObject(id, device, delegate, app);
+		} else {
+			// hit
+			delegate = (DeviceEntityDelegate) this.getDelegate(id);
 		}
 		
 		return delegate;

@@ -25,7 +25,7 @@ import net.floodlightcontroller.util.QueueWriter;
 
 public class OFSwitchDelegate extends DelegateBase implements IOFSwitch {
 	
-	public OFSwitchDelegate(long id, FloodlightModuleRunnable app, QueueWriter<ApiRequest> qw) {
+	OFSwitchDelegate(long id, FloodlightModuleRunnable app, QueueWriter<ApiRequest> qw) {
 		super(id, app, qw);
 	}
 	

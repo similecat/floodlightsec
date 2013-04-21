@@ -8,7 +8,7 @@ public abstract class OFEvent {
 	}
 	
 	private final Type type;
-	private final QueueWriter<OFEventResponse> responseWriter;
+	private final QueueWriter<OFEventResponse> responseWriter; // Really need it?
 	
 	public OFEvent(Type type, QueueWriter<OFEventResponse> qr){
 		this.type = type;

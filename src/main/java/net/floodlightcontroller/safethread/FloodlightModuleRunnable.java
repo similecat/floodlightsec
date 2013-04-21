@@ -14,6 +14,8 @@ import net.floodlightcontroller.core.module.FloodlightModuleException;
 import net.floodlightcontroller.core.module.FloodlightModuleLoader;
 import net.floodlightcontroller.core.module.IFloodlightModule;
 import net.floodlightcontroller.core.module.IFloodlightService;
+import net.floodlightcontroller.devicemanager.IDeviceListener;
+import net.floodlightcontroller.safethread.message.DeviceEvent;
 import net.floodlightcontroller.safethread.message.OFEvent;
 import net.floodlightcontroller.safethread.message.OFEventResponse;
 import net.floodlightcontroller.safethread.message.OFMessageEvent;
@@ -46,6 +48,7 @@ public abstract class FloodlightModuleRunnable implements Runnable, IFloodlightM
 	public QueueWriter<OFEvent> eventQueueWriter;
 	
 	private IOFMessageListener messageListener;
+	private IDeviceListener deviceListener;
 	private Object initAndStartUpMonitor;
 	private Object initLock;
 
@@ -115,8 +118,12 @@ public abstract class FloodlightModuleRunnable implements Runnable, IFloodlightM
 		this.startUp(moduleContextDelegate);
 	}
 	
-	public void setListener(IOFMessageListener l) {
+	public void setMessageListener(IOFMessageListener l) {
 		this.messageListener = l;
+	}
+	
+	public void setDeviceListener(IDeviceListener l) {
+		this.deviceListener = l;
 	}
 
 	@Override
@@ -157,8 +164,11 @@ public abstract class FloodlightModuleRunnable implements Runnable, IFloodlightM
 				// Dispatch and execute
 				Command cmd = dispatchEvent(event);
 				
-				event.getResponseWriter().write(new OFEventResponse(cmd));
-				event.getResponseWriter().notifies();
+				QueueWriter<OFEventResponse> writer = event.getResponseWriter();
+				if (writer!=null) {
+					writer.write(new OFEventResponse(cmd));
+					writer.notifies();
+				}
 			
 				event = eventQueueReader.read();
 			}
@@ -174,6 +184,23 @@ public abstract class FloodlightModuleRunnable implements Runnable, IFloodlightM
 			cmd = real.receive(((OFMessageEvent) event).getOFSwitch(),
 					((OFMessageEvent) event).getOFMessage(),
 					((OFMessageEvent) event).getFloodlightContext());
+		}
+		else if (event instanceof DeviceEvent) {
+			IDeviceListener real = DeviceListenerDelegate
+					.getRealListener(deviceListener);
+			switch (((DeviceEvent) event).getType()) {
+			case ADDED:
+				real.deviceAdded(((DeviceEvent) event).getDevice());
+			case REMOVED:
+				real.deviceRemoved(((DeviceEvent) event).getDevice());
+			case MOVED:
+				real.deviceMoved(((DeviceEvent) event).getDevice());
+			case IPV4_ADDR_CHANGED:
+				real.deviceIPV4AddrChanged(((DeviceEvent) event).getDevice());
+			case VLAN_CHANGED:
+				real.deviceVlanChanged(((DeviceEvent) event).getDevice());
+			}
+			cmd = Command.CONTINUE;
 		}
 		else {
 			// TODO: Add other cases

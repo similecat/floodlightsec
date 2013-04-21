@@ -43,6 +43,7 @@ import net.floodlightcontroller.packet.IPacket;
 import net.floodlightcontroller.routing.IRoutingService;
 import net.floodlightcontroller.routing.IRoutingDecision;
 import net.floodlightcontroller.routing.Route;
+import net.floodlightcontroller.safethread.FloodlightModuleRunnable;
 import net.floodlightcontroller.topology.ITopologyService;
 import net.floodlightcontroller.topology.NodePortTuple;
 import net.floodlightcontroller.util.OFMessageDamper;
@@ -65,7 +66,7 @@ import org.slf4j.LoggerFactory;
  * decision.
  */
 @LogMessageCategory("Flow Programming")
-public abstract class ForwardingBase 
+public abstract class ForwardingBase extends FloodlightModuleRunnable
     implements IOFMessageListener, IDeviceListener {
     
     protected static Logger log =
