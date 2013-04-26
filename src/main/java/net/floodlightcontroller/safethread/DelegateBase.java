@@ -4,6 +4,9 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.floodlightcontroller.core.module.IFloodlightService;
 import net.floodlightcontroller.safethread.message.ApiRequest;
 import net.floodlightcontroller.safethread.message.ApiResponse;
@@ -23,6 +26,8 @@ public abstract class DelegateBase implements IFloodlightService {
 	protected final FloodlightModuleRunnable app; // Associated app
 	
 	protected final QueueWriter<ApiRequest> kernelQueueWriter; // Kernel api queue
+	protected static Logger logger = LoggerFactory
+			.getLogger(DelegateBase.class);
 
 	protected DelegateBase(long id, FloodlightModuleRunnable app, QueueWriter<ApiRequest> qw) {
 		this.id = id;
@@ -48,8 +53,11 @@ public abstract class DelegateBase implements IFloodlightService {
 				retWriter);
 		this.writeApiRequestToKernelQueue(req);
 		
-		retReader.waits();
-		ApiResponse ret = retReader.read();
+		//logger.debug("Wait reader at apiRequestSync({}, {})", new Object[]{method, args});
+		//retReader.waitsNoTimeout();
+		//ApiResponse ret = retReader.read();
+		//logger.debug("Wait return");
+		ApiResponse ret = retReader.pollingRead();
 		
 		if (ret == null) {
 			// waits timeout

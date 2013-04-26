@@ -11,7 +11,6 @@ import net.floodlightcontroller.core.IListener.Command;
 import net.floodlightcontroller.core.IOFMessageListener;
 import net.floodlightcontroller.core.module.FloodlightModuleContext;
 import net.floodlightcontroller.core.module.FloodlightModuleException;
-import net.floodlightcontroller.core.module.FloodlightModuleLoader;
 import net.floodlightcontroller.core.module.IFloodlightModule;
 import net.floodlightcontroller.core.module.IFloodlightService;
 import net.floodlightcontroller.devicemanager.IDeviceListener;
@@ -39,7 +38,7 @@ import net.floodlightcontroller.util.QueueWriter;
  */
 public abstract class FloodlightModuleRunnable implements Runnable, IFloodlightModule {
 	protected static Logger logger = LoggerFactory
-			.getLogger(FloodlightModuleLoader.class);
+			.getLogger(FloodlightModuleRunnable.class);
 	
 	//private final IFloodlightModule app; // equals "this"
 	private FloodlightModuleContext moduleContextDelegate;
@@ -88,7 +87,7 @@ public abstract class FloodlightModuleRunnable implements Runnable, IFloodlightM
 			IFloodlightService s = cntx.getServiceImpl(c);
 			
 			// Provide app with sanitized services			
-			IFloodlightService ss = sanitizer.sanitize(s, this);
+			IFloodlightService ss = sanitizer.sanitize(c, s, this);
 			moduleContextDelegate.addService(c, ss);
 		}
 		
@@ -157,8 +156,9 @@ public abstract class FloodlightModuleRunnable implements Runnable, IFloodlightM
 		startUpEx();
 
 		while (true) {
-			eventQueueReader.waits();
-			event = eventQueueReader.read();
+			//eventQueueReader.waitsNoTimeout();
+			//event = eventQueueReader.read();
+			event = eventQueueReader.pollingRead();
 			
 			while(event!=null) {
 				// Dispatch and execute
@@ -169,7 +169,8 @@ public abstract class FloodlightModuleRunnable implements Runnable, IFloodlightM
 					writer.write(new OFEventResponse(cmd));
 					writer.notifies();
 				}
-			
+
+				//logger.debug("App queue length: {}", eventQueueReader.queue.size());
 				event = eventQueueReader.read();
 			}
 		}

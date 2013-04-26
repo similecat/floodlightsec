@@ -17,7 +17,6 @@ import net.floodlightcontroller.safethread.message.ApiResponse;
 import net.floodlightcontroller.util.QueueReader;
 import net.floodlightcontroller.util.QueueWriter;
 import net.floodlightcontroller.core.internal.Controller;
-import net.floodlightcontroller.core.module.FloodlightModuleLoader;
 
 public class KernelDeputy implements Runnable {
 	protected final QueueReader<ApiRequest> apiRequestQueueReader;
@@ -26,7 +25,7 @@ public class KernelDeputy implements Runnable {
 	protected DelegateSanitizer sanitizer = null;
 	
 	protected static Logger logger = LoggerFactory
-			.getLogger(FloodlightModuleLoader.class);
+			.getLogger(KernelDeputy.class);
 	//public static Object monitor = new Object();	
 	//public static Queue<List<Object>> taskQueue = new ConcurrentLinkedQueue<List<Object>>();
 	
@@ -55,92 +54,121 @@ public class KernelDeputy implements Runnable {
 	public void run() {
 		while (true) {
 			// Wait for incoming API calls
-			apiRequestQueueReader.waits();
+			//apiRequestQueueReader.waitsNoTimeout();
+			//ApiRequest task = apiRequestQueueReader.read();
 			
 			// Process API calls until queue gets empty
-			ApiRequest task = apiRequestQueueReader.read();
+			ApiRequest task = apiRequestQueueReader.pollingRead();
 			while (task!=null) {
-				// Translate request
-				Object obj = this.id2ObjectMap.get(task.getObjectId());
-				List<Object> args = task.getArgs();
-				Class<?>[] argClasses = new Class[args.size()];
-				Method method = null;
-				Object ret = null;
+				TaskWorker tw = new TaskWorker();
+				tw.setTask(task);
+				new Thread(tw).start();
 				
-				for(int i=0;i<args.size();i++) {
-					if (args.get(i) != null) {
-						argClasses[i] = args.get(i).getClass();
-					}
-					else {
-						argClasses[i] = null;
-					}
+				//logger.debug("Kernel queue length: {}", apiRequestQueueReader.queue.size());
+				task = apiRequestQueueReader.read();
+			}			
+		}
+	}
+	
+	class TaskWorker implements Runnable {
+		private ApiRequest task;
+		
+		public void setTask(ApiRequest r) {
+			task = r;
+		}
+		
+		public void run() {
+			// Translate request
+			Object obj = id2ObjectMap.get(task.getObjectId());
+			List<Object> args = task.getArgs();
+			Class<?>[] argClasses = new Class[args.size()];
+			Method method = null;
+			Object ret = null;
+			
+			for(int i=0;i<args.size();i++) {
+				if (args.get(i) != null) {
+					argClasses[i] = args.get(i).getClass();
 				}
-				
-				// This approach has issue when parameter involves inherited classes
-//				try {
-//					method = obj.getClass().getMethod(task.getMethod(), argClasses);
-//				} catch (SecurityException e) {
-//					method = null;
-//				} catch (NoSuchMethodException e) {
-//					method = null;
-//				}	
-				
-				// Some ugly pre-processing
-				if (obj.getClass().equals(Controller.class) && task.getMethod().equals("addOFMessageListener")) {
-					((MessageListenerDelegate)args.get(1)).setSanitizer(this.sanitizer);
+				else {
+					argClasses[i] = null;
 				}
-				
-				
-				// Expensive but works
-				for (Method m : obj.getClass().getMethods()) {
-					if (task.getMethod().equals(m.getName())) {
-						boolean matched = true;
-						int count = 0;
-						for (Class<?> c : m.getParameterTypes()) {
-							if (argClasses[count]!=null && !c.isAssignableFrom(argClasses[count++])) {
+			}
+			
+			// This approach has issue when parameter involves inherited classes
+//			try {
+//				method = obj.getClass().getMethod(task.getMethod(), argClasses);
+//			} catch (SecurityException e) {
+//				method = null;
+//			} catch (NoSuchMethodException e) {
+//				method = null;
+//			}	
+			
+			// Some ugly pre-processing
+			if (obj.getClass().equals(Controller.class) && task.getMethod().equals("addOFMessageListener")) {
+				((MessageListenerDelegate)args.get(1)).setSanitizer(sanitizer);
+			}
+			
+			
+			// Expensive but works
+			for (Method m : obj.getClass().getMethods()) {
+				if (m.getParameterTypes().length != argClasses.length)
+					continue;
+
+				if (task.getMethod().equals(m.getName())) {
+					boolean matched = true;
+					int count = 0;
+					for (Class<?> c : m.getParameterTypes()) {
+						if (argClasses[count]!=null && !c.isAssignableFrom(argClasses[count])) {
+							if ((c.equals(long.class) && argClasses[count].equals(Long.class)) ||
+									(c.equals(short.class) && argClasses[count].equals(Short.class)) ||
+									(c.equals(int.class) && argClasses[count].equals(Integer.class)) ||
+									(c.equals(boolean.class) && argClasses[count].equals(Boolean.class)) ||
+									(c.equals(char.class) && argClasses[count].equals(Character.class)) ||
+									(c.equals(byte.class) && argClasses[count].equals(Byte.class)) ||
+									(c.equals(float.class) && argClasses[count].equals(Float.class)) ||
+									(c.equals(double.class) && argClasses[count].equals(Double.class))) {
+								// still matched, do nothing
+							} else {	
 								matched = false;
 								break;
 							}
 						}
-						if (matched == true) {
-							method = m;
-							break;
-						}
+						count++;
+					}
+					if (matched == true) {
+						method = m;
+						break;
 					}
 				}
-				if (method == null) {
-					logger.debug("No method matched: {}.{}()", new Object[]{obj.getClass(), task.getMethod()});
-				}
-				
-				// TODO: Check permissions
-				
-				// Execute request
-				try {
-					if (method != null) {
-						ret = method.invoke(obj, args.toArray());
-					}
-				} catch (IllegalArgumentException e) {
-					logger.debug("Should not reach here: {}", e);
-				} catch (IllegalAccessException e) {
-					logger.debug("Should not reach here: {}", e);
-				} catch (InvocationTargetException e) {
-					logger.debug("Something inside the call goes wrong: {}", e);
-				}	
-				
-				// Send back response if necessary
-				if (task.getQueueWriter() != null) {
-					ApiResponse response = new ApiResponse(
-							task.getObjectId(), task.getMethod(),
-							task.getCaller(), ret);
-
-					task.getQueueWriter().write(response);
-					task.getQueueWriter().notifies();
-				}						
-				
-				task = apiRequestQueueReader.read();
+			}
+			if (method == null) {
+				logger.debug("No method matched: {}.{}()", new Object[]{obj.getClass(), task.getMethod()});
 			}
 			
-		}
+			// TODO: Check permissions
+			
+			// Execute request
+			try {
+				if (method != null) {
+					ret = method.invoke(obj, args.toArray());
+				}
+			} catch (IllegalArgumentException e) {
+				logger.debug("Should not reach here: {}", e);
+			} catch (IllegalAccessException e) {
+				logger.debug("Should not reach here: {}", e);
+			} catch (InvocationTargetException e) {
+				logger.debug("Something inside the call goes wrong: {}", e);
+			}	
+			
+			// Send back response if necessary
+			if (task.getQueueWriter() != null) {
+				ApiResponse response = new ApiResponse(
+						task.getObjectId(), task.getMethod(),
+						task.getCaller(), ret);
 
+				task.getQueueWriter().write(response);
+				task.getQueueWriter().notifies();
+			}			
+		}
 	}
 }

@@ -14,7 +14,6 @@ import net.floodlightcontroller.core.IOFSwitch;
 import net.floodlightcontroller.core.internal.Controller;
 import net.floodlightcontroller.core.internal.OFSwitchImpl;
 import net.floodlightcontroller.core.module.FloodlightModuleContext;
-import net.floodlightcontroller.core.module.FloodlightModuleLoader;
 import net.floodlightcontroller.core.module.IFloodlightService;
 import net.floodlightcontroller.counter.ICounterStoreService;
 import net.floodlightcontroller.devicemanager.IDevice;
@@ -26,6 +25,7 @@ import net.floodlightcontroller.routing.IRoutingService;
 import net.floodlightcontroller.safethread.message.ApiRequest;
 import net.floodlightcontroller.storage.AbstractStorageSource;
 import net.floodlightcontroller.storage.IStorageSourceService;
+import net.floodlightcontroller.topology.ITopologyService;
 import net.floodlightcontroller.topology.TopologyManager;
 import net.floodlightcontroller.util.QueueWriter;
 
@@ -41,14 +41,14 @@ public class DelegateSanitizer {
 												  // items in to this map.
 	private final Map<Long, Object> id2DelegateMap;// Should be synced with id2ObjectMap 
 													// all the time.
-	private final Map<Pair<Object,FloodlightModuleRunnable>, Long> object2IdMap; // Should be synced
+	private final Map<Pair<Pair<Object,Class<?>>,FloodlightModuleRunnable>, Long> object2IdMap; // Should be synced
 																// with id2ObjectMap all the time.
 	private final QueueWriter<ApiRequest> apiRequestQueueWriter; // Shared with KernelDeputy
 	
 	private long idBase;
 	
 	protected static Logger logger = LoggerFactory
-			.getLogger(FloodlightModuleLoader.class);
+			.getLogger(DelegateSanitizer.class);
 
 	class Pair<A, B> {
 	    private A first;
@@ -109,7 +109,7 @@ public class DelegateSanitizer {
 		this.id2ObjectMap = idMap;
 		this.apiRequestQueueWriter = qw;
 		this.id2DelegateMap = new HashMap<Long, Object>();
-		this.object2IdMap = new HashMap<Pair<Object, FloodlightModuleRunnable>, Long>();
+		this.object2IdMap = new HashMap<Pair<Pair<Object, Class<?>>, FloodlightModuleRunnable>, Long>();
 	}
 	
 	/**
@@ -118,15 +118,17 @@ public class DelegateSanitizer {
 	 * @param app
 	 * @return
 	 */
-	private Long insertObject(long id, Object obj, Object delegate, FloodlightModuleRunnable app) {
+	private Long insertObject(long id, Object obj, Class<?> clazz, Object delegate, FloodlightModuleRunnable app) {
 		this.id2ObjectMap.put(id, obj);
 		this.id2DelegateMap.put(id, delegate);
-		this.object2IdMap.put(new Pair<Object, FloodlightModuleRunnable>(obj, app), id);
+		this.object2IdMap.put(new Pair< Pair<Object, Class<?>>, FloodlightModuleRunnable>(
+				new Pair<Object, Class<?>>(obj, clazz), app), id);
 		return id;
 	}
 	
-	private Long getIdWithObject(Object obj, FloodlightModuleRunnable app) {
-		return this.object2IdMap.get(new Pair<Object, FloodlightModuleRunnable>(obj, app));
+	private Long getIdWithObject(Object obj, Class<?> clazz, FloodlightModuleRunnable app) {
+		return this.object2IdMap.get(new Pair<Pair<Object, Class<?>>, FloodlightModuleRunnable>(
+				new Pair<Object, Class<?>>(obj, clazz), app));
 	}
 	
 	private Object getObject(Long id) {
@@ -152,13 +154,13 @@ public class DelegateSanitizer {
 		} else if (!(iprovider instanceof Controller))
 			return null;
 
-		Long id = getIdWithObject(iprovider, app);
+		Long id = getIdWithObject(iprovider, IFloodlightProviderService.class, app);
 		if (id==null) {
 			// no hit
 			id = idBase++;
 			delegate = new FloodlightProviderDelegate(
 					id, app, this.apiRequestQueueWriter);
-			this.insertObject(id, iprovider, delegate, app);
+			this.insertObject(id, iprovider, IFloodlightProviderService.class, delegate, app);
 		} else {
 			// hit
 			delegate = (FloodlightProviderDelegate) this.getDelegate(id);
@@ -177,13 +179,13 @@ public class DelegateSanitizer {
 		} else if (!(s instanceof AbstractStorageSource))
 			return null;
 		
-		Long id = getIdWithObject(s, app);
+		Long id = getIdWithObject(s, IStorageSourceService.class, app);
 		if (id==null) {
 			// no hit
 			id = idBase++;
 			delegate = new StorageSourceDelegate(
 					id, app, this.apiRequestQueueWriter);
-			this.insertObject(id, s, delegate, app);
+			this.insertObject(id, s, IStorageSourceService.class, delegate, app);
 		} else {
 			// hit
 			delegate = (StorageSourceDelegate) this.getDelegate(id);
@@ -202,13 +204,13 @@ public class DelegateSanitizer {
 			return null;
 		}
 		
-		Long id = getIdWithObject(s, app);
+		Long id = getIdWithObject(s, IDeviceService.class, app);
 		if (id==null) {
 			// no hit
 			id = idBase++;
 			delegate = new DeviceDelegate(
 					id, app, this.apiRequestQueueWriter);
-			this.insertObject(id, s, delegate, app);
+			this.insertObject(id, s, IDeviceService.class, delegate, app);
 		} else {
 			// hit
 			delegate = (DeviceDelegate) this.getDelegate(id);
@@ -226,16 +228,40 @@ public class DelegateSanitizer {
 			return null;
 		}
 		
-		Long id = getIdWithObject(s, app);
+		Long id = getIdWithObject(s, IRoutingService.class, app);
 		if (id==null) {
 			// no hit
 			id = idBase++;
 			delegate = new RoutingDelegate(
 					id, app, this.apiRequestQueueWriter);
-			this.insertObject(id, s, delegate, app);
+			this.insertObject(id, s, IRoutingService.class, delegate, app);
 		} else {
 			// hit
 			delegate = (RoutingDelegate) this.getDelegate(id);
+		}
+		return delegate;
+	}
+
+	private IFloodlightService getTopologyDelegate(ITopologyService s,
+			FloodlightModuleRunnable app) {
+		TopologyDelegate delegate;
+		
+		if (s instanceof TopologyDelegate) {
+			s = (TopologyDelegate) this.getObject(((TopologyDelegate)s).getObjectId());
+		} else if (!(s instanceof TopologyManager)) {
+			return null;
+		}
+		
+		Long id = getIdWithObject(s, ITopologyService.class, app);
+		if (id==null) {
+			// no hit
+			id = idBase++;
+			delegate = new TopologyDelegate(
+					id, app, this.apiRequestQueueWriter);
+			this.insertObject(id, s, ITopologyService.class, delegate, app);
+		} else {
+			// hit
+			delegate = (TopologyDelegate) this.getDelegate(id);
 		}
 		return delegate;
 	}
@@ -247,33 +273,36 @@ public class DelegateSanitizer {
 		Collection<Class<? extends IFloodlightService>> servs = app
 				.getModuleDependencies();
 		for (Class<? extends IFloodlightService> s : servs) {
-			ret.addService(s, this.sanitize(cntx.getServiceImpl(s), app));
+			ret.addService(s, this.sanitize(s, cntx.getServiceImpl(s), app));
 		}
 
 		return ret;
 	}
 
-	public IFloodlightService sanitize(IFloodlightService s,
-			FloodlightModuleRunnable app) {
-		if (s instanceof IFloodlightProviderService) {
+	public IFloodlightService sanitize(Class<? extends IFloodlightService> c,
+			IFloodlightService s, FloodlightModuleRunnable app) {
+		if (c.equals(IFloodlightProviderService.class)) {
 			return this.getFloodlightProviderDelegate(
 					(IFloodlightProviderService) s, app);
 		} 
-		else if (s instanceof IStorageSourceService) {
+		else if (c.equals(IStorageSourceService.class)) {
 			return this.getStorageSourceDelegate(
 					(IStorageSourceService) s, app);
 		}
-		else if (s instanceof IDeviceService) {
+		else if (c.equals(IDeviceService.class)) {
 			return this.getDeviceDelegate((IDeviceService) s, app);
 		}
-		else if (s instanceof IRoutingService) {
+		else if (c.equals(IRoutingService.class)) {
 			return this.getRoutingDelegate((IRoutingService) s, app);
 		}
-		else if (s instanceof ICounterStoreService) {
+		else if (c.equals(ITopologyService.class)) {
+			return this.getTopologyDelegate((ITopologyService) s, app);
+		}
+		else if (c.equals(ICounterStoreService.class)) {
 			// Pass through CounterStoreService 
 			return s;
 		}
-		else if (s instanceof IRestApiService) {
+		else if (c.equals(IRestApiService.class)) {
 			// Pass through REST service for now
 			// Monitor REST resources in the future
 			return s;
@@ -293,13 +322,13 @@ public class DelegateSanitizer {
 			return null;
 
 		OFSwitchDelegate delegate;
-		Long id = getIdWithObject(sw, app);
+		Long id = getIdWithObject(sw, IOFSwitch.class, app);
 		if (id==null) {
 			// no hit
 			id = idBase++;
 			delegate = new OFSwitchDelegate(id, app,
 					this.apiRequestQueueWriter);
-			this.insertObject(id, sw, delegate, app);
+			this.insertObject(id, sw, IOFSwitch.class, delegate, app);
 		} else {
 			// hit
 			delegate = (OFSwitchDelegate) this.getDelegate(id);
@@ -317,13 +346,13 @@ public class DelegateSanitizer {
 			return null;
 
 		DeviceEntityDelegate delegate;
-		Long id = getIdWithObject(device, app);
+		Long id = getIdWithObject(device, IDevice.class, app);
 		if (id==null) {
 			// no hit
 			id = idBase++;
 			delegate = new DeviceEntityDelegate(id, app,
 					this.apiRequestQueueWriter, device);
-			this.insertObject(id, device, delegate, app);
+			this.insertObject(id, device, IDevice.class, delegate, app);
 		} else {
 			// hit
 			delegate = (DeviceEntityDelegate) this.getDelegate(id);

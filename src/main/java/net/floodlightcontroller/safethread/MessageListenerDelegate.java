@@ -7,6 +7,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.openflow.protocol.OFMessage;
 import org.openflow.protocol.OFType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 import net.floodlightcontroller.core.FloodlightContext;
@@ -37,6 +39,9 @@ public class MessageListenerDelegate implements IOFMessageListener {
 
 	// KernelDeputy installs the sanitizer before sends to controller 
 	private DelegateSanitizer sanitizer;
+	
+	protected static Logger logger = LoggerFactory
+			.getLogger(MessageListenerDelegate.class);
 
 	// Only visible within safethread package
 	MessageListenerDelegate(IOFMessageListener l, IFloodlightModule app) {
@@ -112,8 +117,11 @@ public class MessageListenerDelegate implements IOFMessageListener {
 		app.eventQueueWriter.notifies();
 
 		// Wait return value
-		retReader.waits();
-		OFEventResponse response = retReader.read();
+		//logger.debug("Wait reader at receive({})", msg);
+		//retReader.waitsNoTimeout();
+		//OFEventResponse response = retReader.read();
+		//logger.debug("Wait return");
+		OFEventResponse response = retReader.pollingRead();
 
 		if (response == null) {
 			return Command.CONTINUE;

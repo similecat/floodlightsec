@@ -47,4 +47,11 @@ public class QueueReader<T> {
 	public T read() {
 		return queue.poll();
 	}
+	
+	public T pollingRead() {
+		while(queue.isEmpty()) {
+			// do nothing
+		}
+		return queue.poll();
+	}
 }
