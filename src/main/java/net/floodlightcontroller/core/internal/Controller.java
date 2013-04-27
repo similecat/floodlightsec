@@ -278,7 +278,7 @@ public class Controller implements IFloodlightProviderService,
 						listener.removedSwitch(sw);
 						break;
 					case PORTCHANGED:
-						listener.switchPortChanged(sw.getObjectId());
+						listener.switchPortChanged(sw.getId());
 						break;
 					}
 				}
@@ -476,7 +476,7 @@ public class Controller implements IFloodlightProviderService,
 		public void channelDisconnected(ChannelHandlerContext ctx,
 				ChannelStateEvent e) throws Exception {
 			if (sw != null && state.hsState == HandshakeState.READY) {
-				if (activeSwitches.containsKey(sw.getObjectId())) {
+				if (activeSwitches.containsKey(sw.getId())) {
 					// It's safe to call removeSwitch even though the map might
 					// not contain this particular switch but another with the
 					// same DPID
@@ -781,7 +781,7 @@ public class Controller implements IFloodlightProviderService,
 
 			sw.deliverRoleReply(vendorMessage.getXid(), role);
 
-			boolean isActive = activeSwitches.containsKey(sw.getObjectId());
+			boolean isActive = activeSwitches.containsKey(sw.getId());
 			if (!isActive && sw.isActive()) {
 				// Transition from SLAVE to MASTER.
 
@@ -810,7 +810,7 @@ public class Controller implements IFloodlightProviderService,
 					sw.clearAllFlowMods();
 					log.debug("First role reply from master switch {}, "
 							+ "clear FlowTable to active switch list",
-							HexString.toHexString(sw.getObjectId()));
+							HexString.toHexString(sw.getId()));
 				}
 
 				// Some switches don't seem to update us with port
@@ -825,13 +825,13 @@ public class Controller implements IFloodlightProviderService,
 				// switch should be included in the active switch list.
 				addSwitch(sw);
 				log.debug("Added master switch {} to active switch list",
-						HexString.toHexString(sw.getObjectId()));
+						HexString.toHexString(sw.getId()));
 
 			} else if (isActive && !sw.isActive()) {
 				// Transition from MASTER to SLAVE: remove switch
 				// from active switch list.
 				log.debug("Removed slave switch {} from active switch"
-						+ " list", HexString.toHexString(sw.getObjectId()));
+						+ " list", HexString.toHexString(sw.getId()));
 				removeSwitch(sw);
 			}
 
@@ -1373,7 +1373,7 @@ public class Controller implements IFloodlightProviderService,
 	protected void addSwitch(IOFSwitch sw) {
 		// TODO: is it safe to modify the HashMap without holding
 		// the old switch's lock?
-		OFSwitchImpl oldSw = (OFSwitchImpl) this.activeSwitches.put(sw.getObjectId(),
+		OFSwitchImpl oldSw = (OFSwitchImpl) this.activeSwitches.put(sw.getId(),
 				sw);
 		if (sw == oldSw) {
 			// Note == for object equality, not .equals for value
@@ -1439,7 +1439,7 @@ public class Controller implements IFloodlightProviderService,
 		// this method is only called after netty has processed all
 		// pending messages
 		log.debug("removeSwitch: {}", sw);
-		if (!this.activeSwitches.remove(sw.getObjectId(), sw) || !sw.isConnected()) {
+		if (!this.activeSwitches.remove(sw.getId(), sw) || !sw.isConnected()) {
 			log.debug("Not removing switch {}; already removed", sw);
 			return;
 		}
@@ -1569,7 +1569,7 @@ public class Controller implements IFloodlightProviderService,
 		// inject the message as a netty upstream channel event so it goes
 		// through the normal netty event processing, including being
 		// handled
-		if (!activeSwitches.containsKey(sw.getObjectId()))
+		if (!activeSwitches.containsKey(sw.getId()))
 			return false;
 
 		try {
@@ -1577,7 +1577,7 @@ public class Controller implements IFloodlightProviderService,
 			handleMessage(sw, msg, bc);
 		} catch (IOException e) {
 			log.error("Error reinjecting OFMessage on switch {}",
-					HexString.toHexString(sw.getObjectId()));
+					HexString.toHexString(sw.getId()));
 			return false;
 		}
 		return true;

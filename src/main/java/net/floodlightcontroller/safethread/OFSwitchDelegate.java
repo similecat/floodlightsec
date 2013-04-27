@@ -25,14 +25,33 @@ import net.floodlightcontroller.util.QueueWriter;
 
 public class OFSwitchDelegate extends DelegateBase implements IOFSwitch {
 	
-	OFSwitchDelegate(long id, FloodlightModuleRunnable app, QueueWriter<ApiRequest> qw) {
+	private long swId;
+
+	OFSwitchDelegate(long id, FloodlightModuleRunnable app, QueueWriter<ApiRequest> qw, long swId) {
 		super(id, app, qw);
+		this.swId = swId;
 	}
 	
 	@Override
 	public void write(OFMessage m, FloodlightContext bc) throws IOException {
 		apiRequestAsync("write", Arrays.asList(m,bc));
 	}
+
+	@Override
+	public long getId() {
+		// Bug fix
+		return swId;
+	}
+
+	@Override
+	public Object getAttribute(String name) {
+		Object ret = this.apiRequestSync("getAttribute", Arrays.asList((Object)name));
+		return ret;
+	}
+	
+//////////////////////////////////////////////////
+//Interface methods that haven't been supported
+//////////////////////////////////////////////////
 
 	@Override
 	public void write(List<OFMessage> msglist, FloodlightContext bc)
@@ -156,11 +175,6 @@ public class OFSwitchDelegate extends DelegateBase implements IOFSwitch {
 	}
 
 	@Override
-	public long getObjectId() {
-		return this.id;
-	}
-
-	@Override
 	public String getStringId() {
 		// TODO Auto-generated method stub
 		return null;
@@ -256,12 +270,6 @@ public class OFSwitchDelegate extends DelegateBase implements IOFSwitch {
 	public boolean hasAttribute(String name) {
 		// TODO Auto-generated method stub
 		return false;
-	}
-
-	@Override
-	public Object getAttribute(String name) {
-		Object ret = this.apiRequestSync("getAttribute", Arrays.asList((Object)name));
-		return ret;
 	}
 
 	@Override

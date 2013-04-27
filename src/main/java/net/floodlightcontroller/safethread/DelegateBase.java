@@ -35,7 +35,7 @@ public abstract class DelegateBase implements IFloodlightService {
 		this.kernelQueueWriter = qw;
 	}
 
-	public long getObjectId() {
+	public long getDelegateId() {
 		return this.id;
 	}
 

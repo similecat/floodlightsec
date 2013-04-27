@@ -724,9 +724,9 @@ IFloodlightModule, IInfoProvider, IHAListener {
     public Command receive(IOFSwitch sw, OFMessage msg, FloodlightContext cntx) {
         switch (msg.getType()) {
             case PACKET_IN:
-                return this.handlePacketIn(sw.getObjectId(), (OFPacketIn) msg, cntx);
+                return this.handlePacketIn(sw.getId(), (OFPacketIn) msg, cntx);
             case PORT_STATUS:
-                return this.handlePortStatus(sw.getObjectId(), (OFPortStatus) msg);
+                return this.handlePortStatus(sw.getId(), (OFPortStatus) msg);
             default:
                 break;
         }
@@ -813,7 +813,7 @@ IFloodlightModule, IInfoProvider, IHAListener {
             }
             return Command.STOP;
         }
-        if (suppressLinkDiscovery.contains(new NodePortTuple(remoteSwitch.getObjectId(),
+        if (suppressLinkDiscovery.contains(new NodePortTuple(remoteSwitch.getId(),
                                                      remotePort))) {
             if (log.isTraceEnabled()) {
                 log.trace("Ignoring link with suppressed src port: switch {} port {}",
@@ -834,7 +834,7 @@ IFloodlightModule, IInfoProvider, IHAListener {
         int dstPortState = (physicalPort != null) ? physicalPort.getState() : 0;
 
         // Store the time of update to this link, and push it out to routingEngine
-        Link lt = new Link(remoteSwitch.getObjectId(), remotePort, iofSwitch.getObjectId(), pi.getInPort());
+        Link lt = new Link(remoteSwitch.getId(), remotePort, iofSwitch.getId(), pi.getInPort());
 
 
         Long lastLldpTime = null;
@@ -1313,12 +1313,12 @@ IFloodlightModule, IInfoProvider, IHAListener {
 
         if (sw.getEnabledPorts() != null) {
             for (Short p : sw.getEnabledPortNumbers()) {
-                processNewPort(sw.getObjectId(), p);
+                processNewPort(sw.getId(), p);
             }
         }
         // Update event history
         evHistTopoSwitch(sw, EvAction.SWITCH_CONNECTED, "None");
-        LDUpdate update = new LDUpdate(sw.getObjectId(), null,
+        LDUpdate update = new LDUpdate(sw.getId(), null,
                                        UpdateOperation.SWITCH_UPDATED);
         updates.add(update);
     }
@@ -1330,7 +1330,7 @@ IFloodlightModule, IInfoProvider, IHAListener {
     @Override
     public void removedSwitch(IOFSwitch iofSwitch) {
         // Update event history
-        long sw = iofSwitch.getObjectId();
+        long sw = iofSwitch.getId();
         evHistTopoSwitch(iofSwitch, EvAction.SWITCH_DISCONNECTED, "None");
         List<Link> eraseList = new ArrayList<Link>();
         lock.writeLock().lock();
@@ -1722,7 +1722,7 @@ IFloodlightModule, IInfoProvider, IHAListener {
                 if (log.isTraceEnabled()) {
                     log.trace("SWITCH_IS_CORE_SWITCH set to False for {}", sw);
                 }
-                updates.add(new LDUpdate(sw.getObjectId(), SwitchType.BASIC_SWITCH,
+                updates.add(new LDUpdate(sw.getId(), SwitchType.BASIC_SWITCH,
                                          UpdateOperation.SWITCH_UPDATED));
             }
             else {
@@ -1730,7 +1730,7 @@ IFloodlightModule, IInfoProvider, IHAListener {
                 if (log.isTraceEnabled()) {
                     log.trace("SWITCH_IS_CORE_SWITCH set to True for {}", sw);
                 }
-                updates.add(new LDUpdate(sw.getObjectId(), SwitchType.CORE_SWITCH,
+                updates.add(new LDUpdate(sw.getId(), SwitchType.CORE_SWITCH,
                                          UpdateOperation.SWITCH_UPDATED));
             }
         }
@@ -1937,7 +1937,7 @@ IFloodlightModule, IInfoProvider, IHAListener {
         if (evTopoSwitch == null) {
             evTopoSwitch = new EventHistoryTopologySwitch();
         }
-        evTopoSwitch.dpid     = sw.getObjectId();
+        evTopoSwitch.dpid     = sw.getId();
         if ((sw.getChannel() != null) &&
                 (SocketAddress.class.isInstance(
                                                 sw.getChannel().getRemoteAddress()))) {

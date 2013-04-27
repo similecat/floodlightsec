@@ -384,7 +384,7 @@ public class OFSwitchImpl implements IOFSwitch {
     @Override
     @JsonSerialize(using=DPIDSerializer.class)
     @JsonProperty("dpid")
-    public long getObjectId() {
+    public long getId() {
         if (this.stringId == null)
             throw new RuntimeException("Features reply has not yet been set");
         return this.datapathId;

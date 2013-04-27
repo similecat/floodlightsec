@@ -173,7 +173,7 @@ public class Forwarding extends ForwardingBase implements IFloodlightModule {
             IDevice srcDevice =
                     IDeviceService.fcStore.
                         get(cntx, IDeviceService.CONTEXT_SRC_DEVICE);
-            Long srcIsland = topology.getL2DomainId(sw.getObjectId());
+            Long srcIsland = topology.getL2DomainId(sw.getId());
             
             if (srcDevice == null) {
                 log.debug("No device entry found for source device");
@@ -185,6 +185,11 @@ public class Forwarding extends ForwardingBase implements IFloodlightModule {
                 return;
             }
 
+//            // Debug //////////////////////////////////////
+//            if (srcDevice.getMACAddress() == 4 && dstDevice.getMACAddress() ==2) {
+//            	log.debug("hit");
+//            }
+            
             // Validate that we have a destination known on the same island
             // Validate that the source and destination are not on the same switchport
             boolean on_same_island = false;
@@ -194,7 +199,7 @@ public class Forwarding extends ForwardingBase implements IFloodlightModule {
                 Long dstIsland = topology.getL2DomainId(dstSwDpid);
                 if ((dstIsland != null) && dstIsland.equals(srcIsland)) {
                     on_same_island = true;
-                    if ((sw.getObjectId() == dstSwDpid) &&
+                    if ((sw.getId() == dstSwDpid) &&
                         (pi.getInPort() == dstDap.getPort())) {
                         on_same_if = true;
                     }
@@ -283,7 +288,7 @@ public class Forwarding extends ForwardingBase implements IFloodlightModule {
                                         & ~OFMatch.OFPFW_NW_DST_MASK;
                             }
 
-                            pushRoute(route, match, wildcard_hints, pi, sw.getObjectId(), cookie, 
+                            pushRoute(route, match, wildcard_hints, pi, sw.getId(), cookie, 
                                       cntx, requestFlowRemovedNotifn, false,
                                       OFFlowMod.OFPFC_ADD);
                         }
@@ -317,12 +322,12 @@ public class Forwarding extends ForwardingBase implements IFloodlightModule {
                    		"out message to the switch",
                    recommendation=LogMessageDoc.CHECK_SWITCH)
     protected void doFlood(IOFSwitch sw, OFPacketIn pi, FloodlightContext cntx) {
-        if (topology.isIncomingBroadcastAllowed(sw.getObjectId(),
+        if (topology.isIncomingBroadcastAllowed(sw.getId(),
                                                 pi.getInPort()) == false) {
             if (log.isTraceEnabled()) {
                 log.trace("doFlood, drop broadcast packet, pi={}, " + 
                           "from a blocked port, srcSwitch=[{},{}], linkInfo={}",
-                          new Object[] {pi, sw.getObjectId(),pi.getInPort()});
+                          new Object[] {pi, sw.getId(),pi.getInPort()});
             }
             return;
         }

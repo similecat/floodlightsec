@@ -150,7 +150,7 @@ public class DelegateSanitizer {
 		
 		if (iprovider instanceof FloodlightProviderDelegate) {
 			iprovider = (IFloodlightProviderService) this.getObject(
-					((FloodlightProviderDelegate) iprovider).getObjectId());
+					((FloodlightProviderDelegate) iprovider).getDelegateId());
 		} else if (!(iprovider instanceof Controller))
 			return null;
 
@@ -175,7 +175,7 @@ public class DelegateSanitizer {
 		
 		if (s instanceof StorageSourceDelegate) {
 			s = (StorageSourceDelegate) this.getObject(
-					((StorageSourceDelegate) s).getObjectId());
+					((StorageSourceDelegate) s).getDelegateId());
 		} else if (!(s instanceof AbstractStorageSource))
 			return null;
 		
@@ -199,7 +199,7 @@ public class DelegateSanitizer {
 		DeviceDelegate delegate;
 		
 		if (s instanceof DeviceDelegate) {
-			s = (DeviceDelegate) this.getObject(((DeviceDelegate)s).getObjectId());
+			s = (DeviceDelegate) this.getObject(((DeviceDelegate)s).getDelegateId());
 		} else if (!(s instanceof DeviceManagerImpl)) {
 			return null;
 		}
@@ -223,7 +223,7 @@ public class DelegateSanitizer {
 		RoutingDelegate delegate;
 		
 		if (s instanceof RoutingDelegate) {
-			s = (RoutingDelegate) this.getObject(((RoutingDelegate)s).getObjectId());
+			s = (RoutingDelegate) this.getObject(((RoutingDelegate)s).getDelegateId());
 		} else if (!(s instanceof TopologyManager)) {
 			return null;
 		}
@@ -247,7 +247,7 @@ public class DelegateSanitizer {
 		TopologyDelegate delegate;
 		
 		if (s instanceof TopologyDelegate) {
-			s = (TopologyDelegate) this.getObject(((TopologyDelegate)s).getObjectId());
+			s = (TopologyDelegate) this.getObject(((TopologyDelegate)s).getDelegateId());
 		} else if (!(s instanceof TopologyManager)) {
 			return null;
 		}
@@ -317,7 +317,7 @@ public class DelegateSanitizer {
 			FloodlightModuleRunnable app) {
 		if (sw instanceof OFSwitchDelegate) {
 			sw = (IOFSwitch) this.getObject(((OFSwitchDelegate) sw)
-					.getObjectId());
+					.getId());
 		} else if (!(sw instanceof OFSwitchImpl))
 			return null;
 
@@ -327,7 +327,7 @@ public class DelegateSanitizer {
 			// no hit
 			id = idBase++;
 			delegate = new OFSwitchDelegate(id, app,
-					this.apiRequestQueueWriter);
+					this.apiRequestQueueWriter, sw.getId());
 			this.insertObject(id, sw, IOFSwitch.class, delegate, app);
 		} else {
 			// hit
@@ -341,7 +341,7 @@ public class DelegateSanitizer {
 			FloodlightModuleRunnable app) {
 		if (device instanceof DeviceEntityDelegate) {
 			device = (IDevice) this.getObject(((DeviceEntityDelegate) device)
-					.getObjectId());
+					.getDelegateId());
 		} else if (!(device instanceof Device))
 			return null;
 

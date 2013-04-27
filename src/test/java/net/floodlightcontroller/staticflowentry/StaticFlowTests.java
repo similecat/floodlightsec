@@ -202,7 +202,7 @@ public class StaticFlowTests extends FloodlightTestCase {
         //expect(mockSwitch.getOutputStream()).andReturn(mockOutStream).anyTimes();    
 
         // if someone calls getId(), return this dpid instead
-        expect(mockSwitch.getObjectId()).andReturn(dpid).anyTimes();
+        expect(mockSwitch.getId()).andReturn(dpid).anyTimes();
         expect(mockSwitch.getStringId()).andReturn(TestSwitch1DPID).anyTimes();
         replay(mockSwitch);
         

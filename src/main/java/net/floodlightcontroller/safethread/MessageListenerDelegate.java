@@ -43,6 +43,9 @@ public class MessageListenerDelegate implements IOFMessageListener {
 	protected static Logger logger = LoggerFactory
 			.getLogger(MessageListenerDelegate.class);
 
+	// Debug /////////////////////////
+//	private int count = 0;
+	
 	// Only visible within safethread package
 	MessageListenerDelegate(IOFMessageListener l, IFloodlightModule app) {
 		this.realListener = l;
@@ -98,6 +101,15 @@ public class MessageListenerDelegate implements IOFMessageListener {
 	public net.floodlightcontroller.core.IListener.Command receive(
 			IOFSwitch sw, OFMessage msg, FloodlightContext cntx) {
 		// TODO: Permission check
+		
+		
+		// Debug //////////////////////////
+//		if (sw.getId()==7) {
+//			count++;
+//			if (count % 2 == 1) {
+//				count = count;
+//			}				
+//		}
 
 		// Sanitize parameters
 		IOFSwitch swApp = sanitizer.getOFSwitchDelegate(sw, app);

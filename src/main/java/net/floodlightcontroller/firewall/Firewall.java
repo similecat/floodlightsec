@@ -540,7 +540,7 @@ public class Firewall extends FloodlightModuleRunnable
                 rule = iter.next();
 
                 // check if rule matches
-                if (rule.matchesFlow(sw.getObjectId(), pi.getInPort(), eth, wildcards) == true) {
+                if (rule.matchesFlow(sw.getId(), pi.getInPort(), eth, wildcards) == true) {
                     matched_rule = rule;
                     break;
                 }
@@ -594,7 +594,7 @@ public class Firewall extends FloodlightModuleRunnable
                     logger.trace("Allowing broadcast traffic for PacketIn={}",
                             pi);
                                         
-                decision = new RoutingDecision(sw.getObjectId(), pi.getInPort()
+                decision = new RoutingDecision(sw.getId(), pi.getInPort()
                 		, IDeviceService.fcStore.
                         get(cntx, IDeviceService.CONTEXT_SRC_DEVICE),
                         IRoutingDecision.RoutingAction.MULTICAST);
@@ -605,7 +605,7 @@ public class Firewall extends FloodlightModuleRunnable
                             "Blocking malformed broadcast traffic for PacketIn={}",
                             pi);
 
-                decision = new RoutingDecision(sw.getObjectId(), pi.getInPort()
+                decision = new RoutingDecision(sw.getId(), pi.getInPort()
                 		, IDeviceService.fcStore.
                         get(cntx, IDeviceService.CONTEXT_SRC_DEVICE),
                         IRoutingDecision.RoutingAction.DROP);
@@ -631,7 +631,7 @@ public class Firewall extends FloodlightModuleRunnable
             FirewallRule rule = match_ret.rule;
 
             if (rule == null || rule.action == FirewallRule.FirewallAction.DENY) {
-                decision = new RoutingDecision(sw.getObjectId(), pi.getInPort()
+                decision = new RoutingDecision(sw.getId(), pi.getInPort()
                 		, IDeviceService.fcStore.
                         get(cntx, IDeviceService.CONTEXT_SRC_DEVICE),
                         IRoutingDecision.RoutingAction.DROP);
@@ -648,7 +648,7 @@ public class Firewall extends FloodlightModuleRunnable
                     }
                 }
             } else {
-                decision = new RoutingDecision(sw.getObjectId(), pi.getInPort()
+                decision = new RoutingDecision(sw.getId(), pi.getInPort()
                 		, IDeviceService.fcStore.
                         get(cntx, IDeviceService.CONTEXT_SRC_DEVICE),
                         IRoutingDecision.RoutingAction.FORWARD_OR_FLOOD);

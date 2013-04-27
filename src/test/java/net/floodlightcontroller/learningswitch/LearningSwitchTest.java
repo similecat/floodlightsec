@@ -207,7 +207,7 @@ public class LearningSwitchTest extends FloodlightTestCase {
 
         // Mock up our expected behavior
         IOFSwitch mockSwitch = createMock(IOFSwitch.class);
-        expect(mockSwitch.getObjectId()).andReturn(1L).anyTimes();
+        expect(mockSwitch.getId()).andReturn(1L).anyTimes();
         expect(mockSwitch.getAttribute(IOFSwitch.PROP_FASTWILDCARDS)).andReturn((Integer) (OFMatch.OFPFW_IN_PORT | OFMatch.OFPFW_NW_PROTO
                 | OFMatch.OFPFW_TP_SRC | OFMatch.OFPFW_TP_DST | OFMatch.OFPFW_NW_SRC_ALL
                 | OFMatch.OFPFW_NW_DST_ALL | OFMatch.OFPFW_NW_TOS));

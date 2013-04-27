@@ -177,7 +177,7 @@ public class OFMessageDamperMockSwitch implements IOFSwitch {
     }
     
     @Override
-    public long getObjectId() {
+    public long getId() {
         assertTrue("Unexpected method call", false);
         return 0;
     }

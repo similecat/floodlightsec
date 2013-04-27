@@ -205,7 +205,7 @@ public interface IOFSwitch {
      * Get the datapathId of the switch
      * @return
      */
-    public long getObjectId();
+    public long getId();
 
     /**
      * Get a string version of the ID for this switch

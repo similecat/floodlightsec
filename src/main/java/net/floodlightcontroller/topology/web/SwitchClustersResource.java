@@ -56,8 +56,8 @@ public class SwitchClustersResource extends ServerResource {
         for (Entry<Long, IOFSwitch> entry : floodlightProvider.getSwitches().entrySet()) {
             Long clusterDpid = 
                     (openflowDomain
-                     ? topology.getOpenflowDomainId(entry.getValue().getObjectId())
-                     :topology.getL2DomainId(entry.getValue().getObjectId()));
+                     ? topology.getOpenflowDomainId(entry.getValue().getId())
+                     :topology.getL2DomainId(entry.getValue().getId()));
             List<String> switchesInCluster = switchClusterMap.get(HexString.toHexString(clusterDpid));
             if (switchesInCluster != null) {
                 switchesInCluster.add(HexString.toHexString(entry.getKey()));              
