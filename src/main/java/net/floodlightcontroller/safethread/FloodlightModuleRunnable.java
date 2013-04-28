@@ -102,7 +102,7 @@ public abstract class FloodlightModuleRunnable implements Runnable, IFloodlightM
 	 * Method for initialize the module with your crafted context. Make sure
 	 * that it is called after setting the module
 	 */
-	public void initEx() {
+	private void initEx() {
 		try {
 			this.init(moduleContextDelegate);
 		} catch (FloodlightModuleException e) {
@@ -113,7 +113,7 @@ public abstract class FloodlightModuleRunnable implements Runnable, IFloodlightM
 	/**
 	 * Start up a module
 	 */
-	public void startUpEx() {
+	private void startUpEx() {
 		this.startUp(moduleContextDelegate);
 	}
 	
@@ -210,5 +210,4 @@ public abstract class FloodlightModuleRunnable implements Runnable, IFloodlightM
 		}
 		return cmd;
 	}
-
 }

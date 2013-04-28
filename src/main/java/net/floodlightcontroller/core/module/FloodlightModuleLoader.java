@@ -26,6 +26,8 @@ import net.floodlightcontroller.core.annotations.LogMessageDocs;
 import net.floodlightcontroller.core.internal.Controller;
 import net.floodlightcontroller.safethread.DelegateSanitizer;
 import net.floodlightcontroller.safethread.FloodlightModuleRunnable;
+import net.floodlightcontroller.safethread.permissionmanager.AppSecurityManager;
+import net.floodlightcontroller.safethread.permissionmanager.PermissionStorage;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -441,9 +443,18 @@ public class FloodlightModuleLoader {
 		}
 	}
 
-	protected void initStartupModules(Collection<IFloodlightModule> moduleSet, Collection<IFloodlightModule> appSet)
+	protected void initStartupModules(Collection<IFloodlightModule> moduleSet,
+			Collection<IFloodlightModule> appSet)
 			throws FloodlightModuleException {
 		Map<IFloodlightModule, Object> monitorMap = new HashMap<IFloodlightModule, Object>();
+		String[] appNames;
+		Thread[] appThreads;
+		IFloodlightModule[] appMods;
+		int count;
+		
+		appNames = new String[appSet.size()];
+		appThreads = new Thread[appSet.size()];
+		appMods = new IFloodlightModule[appSet.size()];
 		
 		// Init modules before apps
 		for (IFloodlightModule module : moduleSet) {
@@ -529,28 +540,52 @@ public class FloodlightModuleLoader {
 				}
 			}
 		}
-
+		
+		count = 0;
 		for (IFloodlightModule module : appSet) {
 			if (module instanceof FloodlightModuleRunnable) {
 				if (logger.isDebugEnabled()) {
 					logger.debug("Starting unprivileged thread for "
 							+ module.getClass().getCanonicalName());
 				}
+				
+				// Init and start thread
+				Thread t = new Thread((FloodlightModuleRunnable) module);
+				appNames[count] = module.getClass().getCanonicalName();
+				appMods[count] = module;
+				appThreads[count] = t;
+				count++;
+			}
+		}
+
+		// Configure securityManager
+		PermissionStorage store = (PermissionStorage) moduleNameMap.get(PermissionStorage.class.getCanonicalName());
+		if (store==null) {
+			logger.error("PermissionStorage must be included in startup module list.");
+			System.exit(-1);
+		}
+		store.setApps(appNames, appThreads, appMods);
+		
+//		SecurityManager sm = new AppSecurityManager(store);
+//		System.setSecurityManager(sm);
+
+		count = 0;
+		for (IFloodlightModule module : appSet) {
+			if (module instanceof FloodlightModuleRunnable) {
 				// Init internal data of all apps
 				Object obj = new Object(), 
 						initLock = new Object();
 				monitorMap.put(module, obj);
 				((FloodlightModuleRunnable) module).initInternal(floodlightModuleContext, this.sanitizer, obj, initLock);
 				
-				// Init and start thread
-				// TODO: Configure securityManager
-				Thread t = new Thread(((FloodlightModuleRunnable) module));
-				t.start();
+				appThreads[count].start();
+				count++;
+				
 				synchronized(initLock) {
 					try {
 						initLock.wait();
 					} catch (InterruptedException e) {
-						// log
+						// TODO log
 					}
 				}
 				
@@ -566,7 +601,7 @@ public class FloodlightModuleLoader {
 					try {
 						initLock.wait();
 					} catch (InterruptedException e) {
-						// log
+						// TODO log
 					}
 				}
 
