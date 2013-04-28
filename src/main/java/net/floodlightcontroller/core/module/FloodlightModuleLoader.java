@@ -566,8 +566,8 @@ public class FloodlightModuleLoader {
 		}
 		store.setApps(appNames, appThreads, appMods);
 		
-//		SecurityManager sm = new AppSecurityManager(store);
-//		System.setSecurityManager(sm);
+		SecurityManager sm = new AppSecurityManager(store);
+		System.setSecurityManager(sm);
 
 		count = 0;
 		for (IFloodlightModule module : appSet) {

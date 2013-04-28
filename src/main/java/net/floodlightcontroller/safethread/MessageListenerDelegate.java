@@ -130,10 +130,10 @@ public class MessageListenerDelegate implements IOFMessageListener {
 
 		// Wait return value
 		//logger.debug("Wait reader at receive({})", msg);
-		//retReader.waitsNoTimeout();
-		//OFEventResponse response = retReader.read();
+		retReader.waitsNoTimeout();
+		OFEventResponse response = retReader.read();
 		//logger.debug("Wait return");
-		OFEventResponse response = retReader.pollingRead();
+//		OFEventResponse response = retReader.pollingRead();
 
 		if (response == null) {
 			return Command.CONTINUE;

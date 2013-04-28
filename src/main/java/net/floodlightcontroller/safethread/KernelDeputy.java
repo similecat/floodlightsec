@@ -54,11 +54,11 @@ public class KernelDeputy implements Runnable {
 	public void run() {
 		while (true) {
 			// Wait for incoming API calls
-			//apiRequestQueueReader.waitsNoTimeout();
-			//ApiRequest task = apiRequestQueueReader.read();
+			apiRequestQueueReader.waitsNoTimeout();
+			ApiRequest task = apiRequestQueueReader.read();
 			
 			// Process API calls until queue gets empty
-			ApiRequest task = apiRequestQueueReader.pollingRead();
+//			ApiRequest task = apiRequestQueueReader.pollingRead();
 			while (task!=null) {
 				TaskWorker tw = new TaskWorker();
 				tw.setTask(task);

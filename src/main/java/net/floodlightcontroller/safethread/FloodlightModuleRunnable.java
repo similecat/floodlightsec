@@ -156,9 +156,9 @@ public abstract class FloodlightModuleRunnable implements Runnable, IFloodlightM
 		startUpEx();
 
 		while (true) {
-			//eventQueueReader.waitsNoTimeout();
-			//event = eventQueueReader.read();
-			event = eventQueueReader.pollingRead();
+			eventQueueReader.waitsNoTimeout();
+			event = eventQueueReader.read();
+//			event = eventQueueReader.pollingRead();
 			
 			while(event!=null) {
 				// Dispatch and execute

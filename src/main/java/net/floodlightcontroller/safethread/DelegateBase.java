@@ -54,10 +54,10 @@ public abstract class DelegateBase implements IFloodlightService {
 		this.writeApiRequestToKernelQueue(req);
 		
 		//logger.debug("Wait reader at apiRequestSync({}, {})", new Object[]{method, args});
-		//retReader.waitsNoTimeout();
-		//ApiResponse ret = retReader.read();
+		retReader.waitsNoTimeout();
+		ApiResponse ret = retReader.read();
 		//logger.debug("Wait return");
-		ApiResponse ret = retReader.pollingRead();
+//		ApiResponse ret = retReader.pollingRead();
 		
 		if (ret == null) {
 			// waits timeout
