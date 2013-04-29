@@ -550,7 +550,8 @@ public class FloodlightModuleLoader {
 				}
 				
 				// Init and start thread
-				Thread t = new Thread((FloodlightModuleRunnable) module);
+				Thread t = new Thread((FloodlightModuleRunnable) module, "App-"
+						+ module.getClass().getSimpleName() + "-0");
 				appNames[count] = module.getClass().getCanonicalName();
 				appMods[count] = module;
 				appThreads[count] = t;

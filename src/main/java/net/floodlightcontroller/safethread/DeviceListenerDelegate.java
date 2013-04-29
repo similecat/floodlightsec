@@ -3,16 +3,15 @@ package net.floodlightcontroller.safethread;
 import java.util.HashMap;
 import java.util.Map;
 
-import net.floodlightcontroller.core.module.IFloodlightModule;
 import net.floodlightcontroller.devicemanager.IDevice;
 import net.floodlightcontroller.devicemanager.IDeviceListener;
 import net.floodlightcontroller.safethread.message.DeviceEvent;
 import net.floodlightcontroller.safethread.message.OFEvent;
 
-public class DeviceListenerDelegate implements
-		IDeviceListener {	
+public class DeviceListenerDelegate extends DelegateBase implements
+		IDeviceListener {
 	private static final Map<IDeviceListener, IDeviceListener> real2delegateMap = 
-			new HashMap<IDeviceListener, IDeviceListener>();	
+			new HashMap<IDeviceListener, IDeviceListener>();
 	private static final Map<IDeviceListener, IDeviceListener> delegate2realMap = 
 			new HashMap<IDeviceListener, IDeviceListener>();
 
@@ -23,7 +22,8 @@ public class DeviceListenerDelegate implements
 	private DelegateSanitizer sanitizer;
 
 	// Only visible within safethread package
-	DeviceListenerDelegate(IDeviceListener l, IFloodlightModule app) {
+	DeviceListenerDelegate(long id, IDeviceListener l, FloodlightModuleRunnable app) {
+		super(id,app,null);
 		if (app instanceof FloodlightModuleRunnable) {
 			this.app = (FloodlightModuleRunnable) app;
 		} else {

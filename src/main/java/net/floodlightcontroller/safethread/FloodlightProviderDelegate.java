@@ -39,15 +39,17 @@ public class FloodlightProviderDelegate extends DelegateBase implements
 		IFloodlightProviderService {
 	
 	protected BasicFactory factory;
+	final protected DelegateSanitizer sanitizer;
 
 	// Some kind of listener lying behind the wall. Most likely that is a
 	// module.
 	// A map representing the catogery of listeners you are proxy of!
 
 	public FloodlightProviderDelegate(long id, FloodlightModuleRunnable app,
-			QueueWriter<ApiRequest> qw) {
+			QueueWriter<ApiRequest> qw, DelegateSanitizer sanitizer) {
 		super(id, app, qw);
-		factory = new BasicFactory();
+		this.factory = new BasicFactory();
+		this.sanitizer = sanitizer;
 	}
 
 	/**
@@ -61,7 +63,8 @@ public class FloodlightProviderDelegate extends DelegateBase implements
 	@Override
 	public void addOFMessageListener(OFType type, IOFMessageListener listener) {
 //		apiRequestAsync("addOFMessageListener", Arrays.asList(type,this.app));
-		IOFMessageListener delegate = new MessageListenerDelegate(listener, app);
+//		IOFMessageListener delegate = new MessageListenerDelegate(listener, app);
+		IOFMessageListener delegate = sanitizer.getMessageListenerDelegate(listener, app);
 		app.setMessageListener(delegate);
 		apiRequestAsync("addOFMessageListener",
 				Arrays.asList(type, delegate));

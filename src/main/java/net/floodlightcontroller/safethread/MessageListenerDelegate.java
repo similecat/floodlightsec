@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory;
 import net.floodlightcontroller.core.FloodlightContext;
 import net.floodlightcontroller.core.IOFMessageListener;
 import net.floodlightcontroller.core.IOFSwitch;
-import net.floodlightcontroller.core.module.IFloodlightModule;
 import net.floodlightcontroller.safethread.message.OFEvent;
 import net.floodlightcontroller.safethread.message.OFEventResponse;
 import net.floodlightcontroller.safethread.message.OFMessageEvent;
@@ -28,7 +27,7 @@ import net.floodlightcontroller.util.QueueWriter;
  * @author Xitao Wen
  * 
  */
-public class MessageListenerDelegate implements IOFMessageListener {	
+public class MessageListenerDelegate extends DelegateBase implements IOFMessageListener {	
 	private static final Map<IOFMessageListener, IOFMessageListener> real2delegateMap = 
 			new HashMap<IOFMessageListener, IOFMessageListener>();	
 	private static final Map<IOFMessageListener, IOFMessageListener> delegate2realMap = 
@@ -47,7 +46,8 @@ public class MessageListenerDelegate implements IOFMessageListener {
 //	private int count = 0;
 	
 	// Only visible within safethread package
-	MessageListenerDelegate(IOFMessageListener l, IFloodlightModule app) {
+	MessageListenerDelegate(long id, IOFMessageListener l, FloodlightModuleRunnable app) {
+		super(id,app,null);
 		this.realListener = l;
 		if (app instanceof FloodlightModuleRunnable) {
 			this.app = (FloodlightModuleRunnable) app;

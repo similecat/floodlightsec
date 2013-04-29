@@ -2,7 +2,6 @@ package net.floodlightcontroller.safethread;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -17,6 +16,7 @@ import net.floodlightcontroller.safethread.message.ApiResponse;
 import net.floodlightcontroller.util.QueueReader;
 import net.floodlightcontroller.util.QueueWriter;
 import net.floodlightcontroller.core.internal.Controller;
+import net.floodlightcontroller.devicemanager.internal.DeviceManagerImpl;
 
 public class KernelDeputy implements Runnable {
 	protected final QueueReader<ApiRequest> apiRequestQueueReader;
@@ -29,13 +29,13 @@ public class KernelDeputy implements Runnable {
 	//public static Object monitor = new Object();	
 	//public static Queue<List<Object>> taskQueue = new ConcurrentLinkedQueue<List<Object>>();
 	
-	public KernelDeputy() {
+	public KernelDeputy(Map<Long, Object> idMap) {
 		Object apiMonitor = new Object();
 		Queue<ApiRequest> apiQueue = new ConcurrentLinkedQueue<ApiRequest>();
 		apiRequestQueueWriter = new QueueWriter<ApiRequest>(apiMonitor, apiQueue);
 		apiRequestQueueReader = new QueueReader<ApiRequest>(apiMonitor, apiQueue);
 		
-		id2ObjectMap = new HashMap<Long, Object>();
+		id2ObjectMap = idMap;
 	}
 	
 	public void setSanitizer(DelegateSanitizer s) {
@@ -46,12 +46,13 @@ public class KernelDeputy implements Runnable {
 		return apiRequestQueueWriter;
 	}
 
-	public Map<Long, Object> getId2ObjectMap() {
-		return id2ObjectMap;
-	}
+//	public Map<Long, Object> getId2ObjectMap() {
+//		return id2ObjectMap;
+//	}
 	
 	@Override
 	public void run() {
+		int workerCount = 0;
 		while (true) {
 			// Wait for incoming API calls
 			apiRequestQueueReader.waitsNoTimeout();
@@ -62,7 +63,7 @@ public class KernelDeputy implements Runnable {
 			while (task!=null) {
 				TaskWorker tw = new TaskWorker();
 				tw.setTask(task);
-				new Thread(tw).start();
+				new Thread(tw,"TaskWorker-" + workerCount++).start();
 				
 				//logger.debug("Kernel queue length: {}", apiRequestQueueReader.queue.size());
 				task = apiRequestQueueReader.read();
@@ -104,8 +105,12 @@ public class KernelDeputy implements Runnable {
 //			}	
 			
 			// Some ugly pre-processing
-			if (obj.getClass().equals(Controller.class) && task.getMethod().equals("addOFMessageListener")) {
-				((MessageListenerDelegate)args.get(1)).setSanitizer(sanitizer);
+			if (obj.getClass().equals(Controller.class)
+					&& task.getMethod().equals("addOFMessageListener")) {
+				((MessageListenerDelegate) args.get(1)).setSanitizer(sanitizer);
+			} else if (obj.getClass().equals(DeviceManagerImpl.class)
+					&& task.getMethod().equals("addListener")) {
+				((DeviceListenerDelegate) args.get(0)).setSanitizer(sanitizer);
 			}
 			
 			

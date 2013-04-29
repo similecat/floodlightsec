@@ -2013,10 +2013,11 @@ public class Controller implements IFloodlightProviderService,
 		initVendorMessages();
 		this.systemStartTime = System.currentTimeMillis();
 		
-		this.deputy = new KernelDeputy();
-		this.sanitizer = new DelegateSanitizer(deputy.getId2ObjectMap(), deputy.getApiRequestQueueWriter());
+		Map<Long, Object> idMap = new HashMap<Long, Object>();
+		this.deputy = new KernelDeputy(idMap);
+		this.sanitizer = new DelegateSanitizer(idMap, deputy.getApiRequestQueueWriter());
 		this.deputy.setSanitizer(this.sanitizer);
-		new Thread(this.deputy).start();
+		new Thread(this.deputy, "KernelDeputy").start();
 	}
 
 	/**

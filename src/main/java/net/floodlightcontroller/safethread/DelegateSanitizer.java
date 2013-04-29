@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import net.floodlightcontroller.core.FloodlightContext;
 import net.floodlightcontroller.core.IFloodlightProviderService;
+import net.floodlightcontroller.core.IOFMessageListener;
 import net.floodlightcontroller.core.IOFSwitch;
 import net.floodlightcontroller.core.internal.Controller;
 import net.floodlightcontroller.core.internal.OFSwitchImpl;
@@ -17,6 +18,7 @@ import net.floodlightcontroller.core.module.FloodlightModuleContext;
 import net.floodlightcontroller.core.module.IFloodlightService;
 import net.floodlightcontroller.counter.ICounterStoreService;
 import net.floodlightcontroller.devicemanager.IDevice;
+import net.floodlightcontroller.devicemanager.IDeviceListener;
 import net.floodlightcontroller.devicemanager.IDeviceService;
 import net.floodlightcontroller.devicemanager.internal.Device;
 import net.floodlightcontroller.devicemanager.internal.DeviceManagerImpl;
@@ -105,7 +107,7 @@ public class DelegateSanitizer {
 			// no hit
 			id = idBase++;
 			delegate = new FloodlightProviderDelegate(
-					id, app, this.apiRequestQueueWriter);
+					id, app, this.apiRequestQueueWriter, this);
 			this.insertObject(id, iprovider, IFloodlightProviderService.class, delegate, app);
 		} else {
 			// hit
@@ -155,7 +157,7 @@ public class DelegateSanitizer {
 			// no hit
 			id = idBase++;
 			delegate = new DeviceDelegate(
-					id, app, this.apiRequestQueueWriter);
+					id, app, this.apiRequestQueueWriter, this);
 			this.insertObject(id, s, IDeviceService.class, delegate, app);
 		} else {
 			// hit
@@ -318,6 +320,40 @@ public class DelegateSanitizer {
 		// TODO This one seems hard to deal with. There's no easy way to determine 
 		// what sensitive info is in it.
 		return cntx;
+	}
+
+	public IDeviceListener getDeviceListenerDelegate(
+			IDeviceListener listener, FloodlightModuleRunnable app) {
+		DeviceListenerDelegate delegate;
+		Long id = getIdWithObject(listener, IDeviceListener.class, app);
+		if (id==null) {
+			// no hit
+			id = idBase++;
+			delegate = new DeviceListenerDelegate(id, listener, app);
+			this.insertObject(id, listener, IDeviceListener.class, delegate, app);
+		} else {
+			// hit
+			delegate = (DeviceListenerDelegate) this.getDelegate(id);
+		}
+		
+		return delegate;
+	}
+
+	public IOFMessageListener getMessageListenerDelegate(
+			IOFMessageListener listener, FloodlightModuleRunnable app) {
+		MessageListenerDelegate delegate;
+		Long id = getIdWithObject(listener, IOFMessageListener.class, app);
+		if (id==null) {
+			// no hit
+			id = idBase++;
+			delegate = new MessageListenerDelegate(id, listener, app);
+			this.insertObject(id, listener, IOFMessageListener.class, delegate, app);
+		} else {
+			// hit
+			delegate = (MessageListenerDelegate) this.getDelegate(id);
+		}
+		
+		return delegate;
 	}
 
 }

@@ -37,7 +37,7 @@ public class AppSecurityManager extends SecurityManager {
 	
 	@Override
 	public void checkPermission(Permission perm) {
-//		if (perm instanceof FloodlightPermission) {
+//		if (perm instanceof FloodlightPermission) { // Weird classCircularityError here...
 //			Thread t = Thread.currentThread();
 //			if (appThreadSet.contains(t)) {
 //				// Check FloodlightPermission directly
@@ -50,7 +50,8 @@ public class AppSecurityManager extends SecurityManager {
 
 			Thread t = Thread.currentThread();
 			if (appThreadSet.contains(t)) {
-				// Check FloodlightPermission
+				// Translate Java Permission to FloodlightPermission
+				// Still a pretty simple version
 				if (perm instanceof java.io.FilePermission) {
 					if (!perm.getActions().matches("read")) {
 						permStore.checkPermission(

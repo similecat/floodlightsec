@@ -13,13 +13,20 @@ import net.floodlightcontroller.util.QueueWriter;
 
 public class DeviceDelegate extends DelegateBase implements IDeviceService {
 
-	public DeviceDelegate(long id, FloodlightModuleRunnable app, QueueWriter<ApiRequest> kw) {
+	final protected DelegateSanitizer sanitizer;
+
+	public DeviceDelegate(long id, FloodlightModuleRunnable app, QueueWriter<ApiRequest> kw,
+			DelegateSanitizer sanitizer) {
 		super(id, app, kw);
+		this.sanitizer = sanitizer;
 	}
 
 	@Override
 	public void addListener(IDeviceListener listener) {
-		apiRequestAsync("addListener", Arrays.asList((Object) listener));
+		//DeviceListenerDelegate delegate = new DeviceListenerDelegate(listener, app);
+		IDeviceListener delegate = sanitizer.getDeviceListenerDelegate(listener, app);
+		app.setDeviceListener(delegate);
+		apiRequestAsync("addListener", Arrays.asList((Object) delegate));
 	}
 	
 //////////////////////////////////////////////////
