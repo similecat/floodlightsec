@@ -53,6 +53,7 @@ public class KernelDeputy implements Runnable {
 	@Override
 	public void run() {
 		int workerCount = 0;
+		TaskWorker tw = new TaskWorker();
 		while (true) {
 			// Wait for incoming API calls
 			apiRequestQueueReader.waitsNoTimeout();
@@ -61,9 +62,9 @@ public class KernelDeputy implements Runnable {
 			// Process API calls until queue gets empty
 //			ApiRequest task = apiRequestQueueReader.pollingRead();
 			while (task!=null) {
-				TaskWorker tw = new TaskWorker();
 				tw.setTask(task);
-				new Thread(tw,"TaskWorker-" + workerCount++).start();
+				tw.run();
+				//new Thread(tw,"TaskWorker-" + workerCount++).start();
 				
 				//logger.debug("Kernel queue length: {}", apiRequestQueueReader.queue.size());
 				task = apiRequestQueueReader.read();
@@ -113,6 +114,18 @@ public class KernelDeputy implements Runnable {
 				((DeviceListenerDelegate) args.get(0)).setSanitizer(sanitizer);
 			}
 			
+			if (task.getMethod().equals("getSwitches")) {
+				ret = ((Controller)obj).getSwitches();
+				if (task.getQueueWriter() != null) {
+					ApiResponse response = new ApiResponse(
+							task.getObjectId(), task.getMethod(),
+							task.getCaller(), ret);
+
+					task.getQueueWriter().write(response);
+					task.getQueueWriter().notifies();
+				}	
+				return;
+			}
 			
 			// Expensive but works
 			for (Method m : obj.getClass().getMethods()) {

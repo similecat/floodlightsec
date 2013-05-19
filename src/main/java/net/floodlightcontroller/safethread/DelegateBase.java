@@ -26,13 +26,24 @@ public abstract class DelegateBase implements IFloodlightService {
 	protected final FloodlightModuleRunnable app; // Associated app
 	
 	protected final QueueWriter<ApiRequest> kernelQueueWriter; // Kernel api queue
+	
+	protected final Object retMonitor;
+	protected final Queue<ApiResponse> retQueue;
+	protected final QueueWriter<ApiResponse> retWriter;
+	protected final QueueReader<ApiResponse> retReader;
+	
 	protected static Logger logger = LoggerFactory
 			.getLogger(DelegateBase.class);
 
 	protected DelegateBase(long id, FloodlightModuleRunnable app, QueueWriter<ApiRequest> qw) {
 		this.id = id;
 		this.app = app;
-		this.kernelQueueWriter = qw;
+		this.kernelQueueWriter = qw;		
+
+		retMonitor = new Object();
+		retQueue = new ConcurrentLinkedQueue<ApiResponse>();
+		retWriter = new QueueWriter<ApiResponse>(retMonitor, retQueue);
+		retReader = new QueueReader<ApiResponse>(retMonitor, retQueue);
 	}
 
 	public long getDelegateId() {
@@ -41,17 +52,15 @@ public abstract class DelegateBase implements IFloodlightService {
 
 	protected void apiRequestAsync(String method, List<Object> args) {
 		ApiRequest req = new ApiRequest(this.id, method, this.app, args, null);
-		this.writeApiRequestToKernelQueue(req);
+		kernelQueueWriter.write(req);
+		kernelQueueWriter.notifies();
 	}
 
 	protected Object apiRequestSync(String method, List<Object> args) {
-		Object retMonitor = new Object();
-		Queue<ApiResponse> retQueue = new ConcurrentLinkedQueue<ApiResponse>();
-		QueueWriter<ApiResponse> retWriter = new QueueWriter<ApiResponse>(retMonitor, retQueue);
-		QueueReader<ApiResponse> retReader = new QueueReader<ApiResponse>(retMonitor, retQueue);
 		ApiRequest req = new ApiRequest(this.id, method, this.app, args,
 				retWriter);
-		this.writeApiRequestToKernelQueue(req);
+		kernelQueueWriter.write(req);
+		kernelQueueWriter.notifies();
 		
 		//logger.debug("Wait reader at apiRequestSync({}, {})", new Object[]{method, args});
 		retReader.waitsNoTimeout();
@@ -69,10 +78,5 @@ public abstract class DelegateBase implements IFloodlightService {
 		} else {
 			return ret.getReturnValue();
 		}
-	}
-
-	private void writeApiRequestToKernelQueue(ApiRequest req) {
-		kernelQueueWriter.write(req);
-		kernelQueueWriter.notifies();
 	}
 }

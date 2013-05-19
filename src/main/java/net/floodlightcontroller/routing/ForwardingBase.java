@@ -386,11 +386,11 @@ public abstract class ForwardingBase extends FloodlightModuleRunnable
 
         try {
             counterStore.updatePktOutFMCounterStore(sw, po);
-            //messageDamper.write(sw, po, cntx, flush);
-            sw.write(po, cntx);
-            if (flush) {
-                sw.flush();
-            }
+            messageDamper.write(sw, po, cntx, flush);
+//            sw.write(po, cntx);
+//            if (flush) {
+//                sw.flush();
+//            }
         } catch (IOException e) {
             log.error("Failure writing packet out", e);
         }
@@ -473,8 +473,8 @@ public abstract class ForwardingBase extends FloodlightModuleRunnable
 
         try {
             counterStore.updatePktOutFMCounterStore(sw, po);
-            //messageDamper.write(sw, po, cntx);
-            sw.write(po, cntx);
+            messageDamper.write(sw, po, cntx);
+            //sw.write(po, cntx);
         } catch (IOException e) {
             log.error("Failure writing packet out", e);
         }
@@ -531,8 +531,8 @@ public abstract class ForwardingBase extends FloodlightModuleRunnable
                         "interfaces={} packet-out={}",
                         new Object[] {sw.getId(), outPorts, po});
             }
-            //messageDamper.write(sw, po, cntx);
-            sw.write(po, cntx);
+            messageDamper.write(sw, po, cntx);
+            //sw.write(po, cntx);
 
         } catch (IOException e) {
             log.error("Failure writing packet out", e);
