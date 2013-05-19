@@ -2,6 +2,8 @@ package net.floodlightcontroller.safethread;
 
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.slf4j.Logger;
@@ -28,7 +30,7 @@ public abstract class DelegateBase implements IFloodlightService {
 	protected final QueueWriter<ApiRequest> kernelQueueWriter; // Kernel api queue
 	
 	protected final Object retMonitor;
-	protected final Queue<ApiResponse> retQueue;
+	protected final BlockingQueue<ApiResponse> retQueue;
 	protected final QueueWriter<ApiResponse> retWriter;
 	protected final QueueReader<ApiResponse> retReader;
 	
@@ -41,7 +43,7 @@ public abstract class DelegateBase implements IFloodlightService {
 		this.kernelQueueWriter = qw;		
 
 		retMonitor = new Object();
-		retQueue = new ConcurrentLinkedQueue<ApiResponse>();
+		retQueue = new ArrayBlockingQueue<ApiResponse>(QueueReader.QUEUE_SIZE);
 		retWriter = new QueueWriter<ApiResponse>(retMonitor, retQueue);
 		retReader = new QueueReader<ApiResponse>(retMonitor, retQueue);
 	}
@@ -53,17 +55,17 @@ public abstract class DelegateBase implements IFloodlightService {
 	protected void apiRequestAsync(String method, List<Object> args) {
 		ApiRequest req = new ApiRequest(this.id, method, this.app, args, null);
 		kernelQueueWriter.write(req);
-		kernelQueueWriter.notifies();
+		//kernelQueueWriter.notifies();
 	}
 
 	protected Object apiRequestSync(String method, List<Object> args) {
 		ApiRequest req = new ApiRequest(this.id, method, this.app, args,
 				retWriter);
 		kernelQueueWriter.write(req);
-		kernelQueueWriter.notifies();
+		//kernelQueueWriter.notifies();
 		
 		//logger.debug("Wait reader at apiRequestSync({}, {})", new Object[]{method, args});
-		retReader.waitsNoTimeout();
+		//retReader.waitsNoTimeout();
 		ApiResponse ret = retReader.read();
 		//logger.debug("Wait return");
 //		ApiResponse ret = retReader.pollingRead();

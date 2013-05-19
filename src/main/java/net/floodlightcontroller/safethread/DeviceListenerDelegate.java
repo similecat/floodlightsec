@@ -64,7 +64,7 @@ public class DeviceListenerDelegate extends DelegateBase implements
 		OFEvent t = new DeviceEvent(null, app, DeviceEvent.Type.ADDED, deviceApp);
 
 		app.eventQueueWriter.write(t);
-		app.eventQueueWriter.notifies();
+		//app.eventQueueWriter.notifies();
 
 		// No return value
 	}
@@ -80,7 +80,7 @@ public class DeviceListenerDelegate extends DelegateBase implements
 		OFEvent t = new DeviceEvent(null, app, DeviceEvent.Type.REMOVED, deviceApp);
 
 		app.eventQueueWriter.write(t);
-		app.eventQueueWriter.notifies();
+		//app.eventQueueWriter.notifies();
 
 		// No return value
 	}
@@ -96,7 +96,7 @@ public class DeviceListenerDelegate extends DelegateBase implements
 		OFEvent t = new DeviceEvent(null, app, DeviceEvent.Type.MOVED, deviceApp);
 
 		app.eventQueueWriter.write(t);
-		app.eventQueueWriter.notifies();
+		//app.eventQueueWriter.notifies();
 
 		// No return value
 	}
@@ -112,7 +112,7 @@ public class DeviceListenerDelegate extends DelegateBase implements
 		OFEvent t = new DeviceEvent(null, app, DeviceEvent.Type.IPV4_ADDR_CHANGED, deviceApp);
 
 		app.eventQueueWriter.write(t);
-		app.eventQueueWriter.notifies();
+		//app.eventQueueWriter.notifies();
 
 		// No return value
 	}
@@ -128,7 +128,7 @@ public class DeviceListenerDelegate extends DelegateBase implements
 		OFEvent t = new DeviceEvent(null, app, DeviceEvent.Type.VLAN_CHANGED, deviceApp);
 
 		app.eventQueueWriter.write(t);
-		app.eventQueueWriter.notifies();
+		//app.eventQueueWriter.notifies();
 
 		// No return value
 	}

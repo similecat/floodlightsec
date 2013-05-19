@@ -1,12 +1,12 @@
 package net.floodlightcontroller.util;
 
-import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
 
 public class QueueWriter<T> {
 	private final Object monitor;
-	private final Queue<T> queue;
+	private final BlockingQueue<T> queue;
 
-	public QueueWriter(Object m, Queue<T> q) {
+	public QueueWriter(Object m, BlockingQueue<T> q) {
 		monitor = m;
 		queue = q;
 	}

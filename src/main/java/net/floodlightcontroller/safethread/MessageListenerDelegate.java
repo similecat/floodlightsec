@@ -2,8 +2,8 @@ package net.floodlightcontroller.safethread;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
 import org.openflow.protocol.OFMessage;
 import org.openflow.protocol.OFType;
@@ -118,7 +118,7 @@ public class MessageListenerDelegate extends DelegateBase implements IOFMessageL
 
 		// Notify app through inter-thread communication
 		Object retMonitor = new Object();
-		Queue<OFEventResponse> retQueue = new ConcurrentLinkedQueue<OFEventResponse>();
+		BlockingQueue<OFEventResponse> retQueue = new ArrayBlockingQueue<OFEventResponse>(QueueReader.QUEUE_SIZE);
 		QueueWriter<OFEventResponse> retWriter = new QueueWriter<OFEventResponse>(
 				retMonitor, retQueue);
 		QueueReader<OFEventResponse> retReader = new QueueReader<OFEventResponse>(
@@ -126,11 +126,11 @@ public class MessageListenerDelegate extends DelegateBase implements IOFMessageL
 		OFEvent t = new OFMessageEvent(retWriter, app, msgApp, swApp, cntxApp);
 
 		app.eventQueueWriter.write(t);
-		app.eventQueueWriter.notifies();
+		//app.eventQueueWriter.notifies();
 
 		// Wait return value
 		//logger.debug("Wait reader at receive({})", msg);
-		retReader.waitsNoTimeout();
+		//retReader.waitsNoTimeout();
 		OFEventResponse response = retReader.read();
 		//logger.debug("Wait return");
 //		OFEventResponse response = retReader.pollingRead();

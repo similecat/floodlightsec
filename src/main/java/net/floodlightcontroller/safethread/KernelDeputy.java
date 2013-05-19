@@ -4,8 +4,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +31,7 @@ public class KernelDeputy implements Runnable {
 	
 	public KernelDeputy(Map<Long, Object> idMap) {
 		Object apiMonitor = new Object();
-		Queue<ApiRequest> apiQueue = new ConcurrentLinkedQueue<ApiRequest>();
+		BlockingQueue<ApiRequest> apiQueue = new ArrayBlockingQueue<ApiRequest>(QueueReader.QUEUE_SIZE);
 		apiRequestQueueWriter = new QueueWriter<ApiRequest>(apiMonitor, apiQueue);
 		apiRequestQueueReader = new QueueReader<ApiRequest>(apiMonitor, apiQueue);
 		
@@ -52,11 +52,11 @@ public class KernelDeputy implements Runnable {
 	
 	@Override
 	public void run() {
-		int workerCount = 0;
+		//int workerCount = 0;
 		TaskWorker tw = new TaskWorker();
 		while (true) {
 			// Wait for incoming API calls
-			apiRequestQueueReader.waitsNoTimeout();
+			//apiRequestQueueReader.waitsNoTimeout();
 			ApiRequest task = apiRequestQueueReader.read();
 			
 			// Process API calls until queue gets empty
@@ -122,7 +122,7 @@ public class KernelDeputy implements Runnable {
 							task.getCaller(), ret);
 
 					task.getQueueWriter().write(response);
-					task.getQueueWriter().notifies();
+					//task.getQueueWriter().notifies();
 				}	
 				return;
 			}

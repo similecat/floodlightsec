@@ -1,13 +1,20 @@
 package net.floodlightcontroller.util;
 
-import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class QueueReader<T> {
 	public static final long TIMEOUT = 500;
-	private final Object monitor;
-	private final Queue<T> queue;
+	public static final int QUEUE_SIZE = 1024;
 	
-	public QueueReader(Object m, Queue<T> q) {
+	private final Object monitor;
+	private final BlockingQueue<T> queue;
+	
+	protected static Logger log = LoggerFactory.getLogger(QueueReader.class);
+	
+	public QueueReader(Object m, BlockingQueue<T> q) {
 		monitor = m;
 		queue = q;
 	}
@@ -45,7 +52,13 @@ public class QueueReader<T> {
 	 * @return Return null if queue is empty.
 	 */
 	public T read() {
-		return queue.poll();
+		try {
+			return queue.take();
+		} catch (InterruptedException e) {
+			log.error("BlockingQueue interrupted.");
+			return null;
+		}
+//		return queue.poll();
 	}
 	
 	public T pollingRead() {

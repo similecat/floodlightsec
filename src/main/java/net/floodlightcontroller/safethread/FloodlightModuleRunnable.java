@@ -1,8 +1,8 @@
 package net.floodlightcontroller.safethread;
 
 import java.util.Collection;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,7 +93,7 @@ public abstract class FloodlightModuleRunnable implements Runnable, IFloodlightM
 		
 		// Init event queue
 		Object eventMonitor = new Object();
-		Queue<OFEvent> eventQueue = new ConcurrentLinkedQueue<OFEvent>();
+		BlockingQueue<OFEvent> eventQueue = new ArrayBlockingQueue<OFEvent>(QueueReader.QUEUE_SIZE);
 		eventQueueWriter = new QueueWriter<OFEvent>(eventMonitor, eventQueue);
 		eventQueueReader = new QueueReader<OFEvent>(eventMonitor, eventQueue);
 	}
@@ -156,7 +156,7 @@ public abstract class FloodlightModuleRunnable implements Runnable, IFloodlightM
 		startUpEx();
 
 		while (true) {
-			eventQueueReader.waitsNoTimeout();
+			//eventQueueReader.waitsNoTimeout();
 			event = eventQueueReader.read();
 //			event = eventQueueReader.pollingRead();
 			
@@ -167,7 +167,7 @@ public abstract class FloodlightModuleRunnable implements Runnable, IFloodlightM
 				QueueWriter<OFEventResponse> writer = event.getResponseWriter();
 				if (writer!=null) {
 					writer.write(new OFEventResponse(cmd));
-					writer.notifies();
+					//writer.notifies();
 				}
 
 				//logger.debug("App queue length: {}", eventQueueReader.queue.size());
