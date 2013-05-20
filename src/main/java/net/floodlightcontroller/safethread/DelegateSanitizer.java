@@ -3,6 +3,7 @@ package net.floodlightcontroller.safethread;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.openflow.protocol.OFMessage;
 import org.slf4j.Logger;
@@ -56,8 +57,8 @@ public class DelegateSanitizer {
 	public DelegateSanitizer(Map<Long, Object> idMap, QueueWriter<ApiRequest> qw) {
 		this.id2ObjectMap = idMap;
 		this.apiRequestQueueWriter = qw;
-		this.id2DelegateMap = new HashMap<Long, Object>();
-		this.object2IdMap = new HashMap<Pair<Pair<Object, Class<?>>, FloodlightModuleRunnable>, Long>();
+		this.id2DelegateMap = new ConcurrentHashMap<Long, Object>();
+		this.object2IdMap = new ConcurrentHashMap<Pair<Pair<Object, Class<?>>, FloodlightModuleRunnable>, Long>();
 	}
 	
 	/**
@@ -146,77 +147,77 @@ public class DelegateSanitizer {
 
 	private IFloodlightService getDeviceDelegate(IDeviceService s,
 			FloodlightModuleRunnable app) {
-//		DeviceDelegate delegate;
-//		
-//		if (s instanceof DeviceDelegate) {
-//			s = (DeviceDelegate) this.getObject(((DeviceDelegate)s).getDelegateId());
-//		} else if (!(s instanceof DeviceManagerImpl)) {
-//			return null;
-//		}
-//		
-//		Long id = getIdWithObject(s, IDeviceService.class, app);
-//		if (id==null) {
-//			// no hit
-//			id = idBase++;
-//			delegate = new DeviceDelegate(
-//					id, app, this.apiRequestQueueWriter, this);
-//			this.insertObject(id, s, IDeviceService.class, delegate, app);
-//		} else {
-//			// hit
-//			delegate = (DeviceDelegate) this.getDelegate(id);
-//		}
-//		return delegate;
-		return s;
+		DeviceDelegate delegate;
+		
+		if (s instanceof DeviceDelegate) {
+			s = (DeviceDelegate) this.getObject(((DeviceDelegate)s).getDelegateId());
+		} else if (!(s instanceof DeviceManagerImpl)) {
+			return null;
+		}
+		
+		Long id = getIdWithObject(s, IDeviceService.class, app);
+		if (id==null) {
+			// no hit
+			id = idBase++;
+			delegate = new DeviceDelegate(
+					id, app, this.apiRequestQueueWriter, this);
+			this.insertObject(id, s, IDeviceService.class, delegate, app);
+		} else {
+			// hit
+			delegate = (DeviceDelegate) this.getDelegate(id);
+		}
+		return delegate;
+//		return s;
 	}
 
 	private IFloodlightService getRoutingDelegate(IRoutingService s,
 			FloodlightModuleRunnable app) {
-//		RoutingDelegate delegate;
-//		
-//		if (s instanceof RoutingDelegate) {
-//			s = (RoutingDelegate) this.getObject(((RoutingDelegate)s).getDelegateId());
-//		} else if (!(s instanceof TopologyManager)) {
-//			return null;
-//		}
-//		
-//		Long id = getIdWithObject(s, IRoutingService.class, app);
-//		if (id==null) {
-//			// no hit
-//			id = idBase++;
-//			delegate = new RoutingDelegate(
-//					id, app, this.apiRequestQueueWriter);
-//			this.insertObject(id, s, IRoutingService.class, delegate, app);
-//		} else {
-//			// hit
-//			delegate = (RoutingDelegate) this.getDelegate(id);
-//		}
-//		return delegate;
-		return s;
+		RoutingDelegate delegate;
+		
+		if (s instanceof RoutingDelegate) {
+			s = (RoutingDelegate) this.getObject(((RoutingDelegate)s).getDelegateId());
+		} else if (!(s instanceof TopologyManager)) {
+			return null;
+		}
+		
+		Long id = getIdWithObject(s, IRoutingService.class, app);
+		if (id==null) {
+			// no hit
+			id = idBase++;
+			delegate = new RoutingDelegate(
+					id, app, this.apiRequestQueueWriter);
+			this.insertObject(id, s, IRoutingService.class, delegate, app);
+		} else {
+			// hit
+			delegate = (RoutingDelegate) this.getDelegate(id);
+		}
+		return delegate;
+//		return s;
 	}
 
 	private IFloodlightService getTopologyDelegate(ITopologyService s,
 			FloodlightModuleRunnable app) {
-//		TopologyDelegate delegate;
-//		
-//		if (s instanceof TopologyDelegate) {
-//			s = (TopologyDelegate) this.getObject(((TopologyDelegate)s).getDelegateId());
-//		} else if (!(s instanceof TopologyManager)) {
-//			return null;
-//		}
-//		
-//		Long id = getIdWithObject(s, ITopologyService.class, app);
-//		if (id==null) {
-//			// no hit
-//			id = idBase++;
-//			delegate = new TopologyDelegate(
-//					id, app, this.apiRequestQueueWriter);
-//			this.insertObject(id, s, ITopologyService.class, delegate, app);
-//		} else {
-//			// hit
-//			delegate = (TopologyDelegate) this.getDelegate(id);
-//		}
-//		return delegate;
-		return s;
+		TopologyDelegate delegate;
+		
+		if (s instanceof TopologyDelegate) {
+			s = (TopologyDelegate) this.getObject(((TopologyDelegate)s).getDelegateId());
+		} else if (!(s instanceof TopologyManager)) {
+			return null;
+		}
+		
+		Long id = getIdWithObject(s, ITopologyService.class, app);
+		if (id==null) {
+			// no hit
+			id = idBase++;
+			delegate = new TopologyDelegate(
+					id, app, this.apiRequestQueueWriter);
+			this.insertObject(id, s, ITopologyService.class, delegate, app);
+		} else {
+			// hit
+			delegate = (TopologyDelegate) this.getDelegate(id);
+		}
+		return delegate;
+//		return s;
 	}
 
 	public FloodlightModuleContext getFloodlightModuleContextDelegate(
@@ -285,6 +286,8 @@ public class DelegateSanitizer {
 		} else {
 			// hit
 			delegate = (OFSwitchDelegate) this.getDelegate(id);
+			if (delegate == null)
+				return null;
 		}
 		
 		return delegate;
@@ -293,27 +296,27 @@ public class DelegateSanitizer {
 
 	public IDevice getDeviceEntityDelegate(IDevice device,
 			FloodlightModuleRunnable app) {
-//		if (device instanceof DeviceEntityDelegate) {
-//			device = (IDevice) this.getObject(((DeviceEntityDelegate) device)
-//					.getDelegateId());
-//		} else if (!(device instanceof Device))
-//			return null;
-//
-//		DeviceEntityDelegate delegate;
-//		Long id = getIdWithObject(device, IDevice.class, app);
-//		if (id==null) {
-//			// no hit
-//			id = idBase++;
-//			delegate = new DeviceEntityDelegate(id, app,
-//					this.apiRequestQueueWriter, device);
-//			this.insertObject(id, device, IDevice.class, delegate, app);
-//		} else {
-//			// hit
-//			delegate = (DeviceEntityDelegate) this.getDelegate(id);
-//		}
-//		
-//		return delegate;
-		return device;
+		if (device instanceof DeviceEntityDelegate) {
+			device = (IDevice) this.getObject(((DeviceEntityDelegate) device)
+					.getDelegateId());
+		} else if (!(device instanceof Device))
+			return null;
+
+		DeviceEntityDelegate delegate;
+		Long id = getIdWithObject(device, IDevice.class, app);
+		if (id==null) {
+			// no hit
+			id = idBase++;
+			delegate = new DeviceEntityDelegate(id, app,
+					this.apiRequestQueueWriter, device);
+			this.insertObject(id, device, IDevice.class, delegate, app);
+		} else {
+			// hit
+			delegate = (DeviceEntityDelegate) this.getDelegate(id);
+		}
+		
+		return delegate;
+//		return device;
 	}
 
 	public OFMessage sanitizeOFMessage(OFMessage msg,

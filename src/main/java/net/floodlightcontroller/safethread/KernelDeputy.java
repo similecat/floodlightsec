@@ -19,6 +19,7 @@ import net.floodlightcontroller.core.internal.Controller;
 import net.floodlightcontroller.devicemanager.internal.DeviceManagerImpl;
 
 public class KernelDeputy implements Runnable {
+	public static final int NTHREAD = 1;
 	protected final QueueReader<ApiRequest> apiRequestQueueReader;
 	protected final QueueWriter<ApiRequest> apiRequestQueueWriter; // Shared with DelegateSanitizer
 	protected final Map<Long, Object> id2ObjectMap;  // Shared with DelegateSanitizer
@@ -57,7 +58,7 @@ public class KernelDeputy implements Runnable {
 		while (true) {
 			// Wait for incoming API calls
 			//apiRequestQueueReader.waitsNoTimeout();
-			ApiRequest task = apiRequestQueueReader.read();
+			ApiRequest task = apiRequestQueueReader.pollingRead();
 			
 			// Process API calls until queue gets empty
 //			ApiRequest task = apiRequestQueueReader.pollingRead();
@@ -67,7 +68,7 @@ public class KernelDeputy implements Runnable {
 				//new Thread(tw,"TaskWorker-" + workerCount++).start();
 				
 				//logger.debug("Kernel queue length: {}", apiRequestQueueReader.queue.size());
-				task = apiRequestQueueReader.read();
+				task = apiRequestQueueReader.pollingRead();
 			}			
 		}
 	}

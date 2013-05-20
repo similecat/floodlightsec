@@ -68,6 +68,7 @@ import net.floodlightcontroller.perfmon.IPktInProcessingTimeService;
 import net.floodlightcontroller.restserver.IRestApiService;
 import net.floodlightcontroller.safethread.DelegateSanitizer;
 import net.floodlightcontroller.safethread.KernelDeputy;
+import net.floodlightcontroller.safethread.MessageListenerDelegate;
 import net.floodlightcontroller.storage.IResultSet;
 import net.floodlightcontroller.storage.IStorageSourceListener;
 import net.floodlightcontroller.storage.IStorageSourceService;
@@ -1287,8 +1288,12 @@ public class Controller implements IFloodlightProviderService,
                             }
                         }
 
-                        pktinProcTime.recordStartTimeComp(listener);
+                        pktinProcTime.recordStartTimeComp(listener);			
+                        long time = System.nanoTime();
                         cmd = listener.receive(sw, m, bc);
+                        if (listener instanceof MessageListenerDelegate) {
+                        	System.out.println((System.nanoTime() - time));
+                        }
                         pktinProcTime.recordEndTimeComp(listener);
                         
                         if (Command.STOP.equals(cmd)) {
@@ -2061,7 +2066,9 @@ public class Controller implements IFloodlightProviderService,
 		this.deputy = new KernelDeputy(idMap);
 		this.sanitizer = new DelegateSanitizer(idMap, deputy.getApiRequestQueueWriter());
 		this.deputy.setSanitizer(this.sanitizer);
-		new Thread(this.deputy, "KernelDeputy").start();
+		for (int i=0;i<KernelDeputy.NTHREAD;i++) {
+			new Thread(this.deputy, "KernelDeputy-" + i).start();
+		}
     }
     
     /**

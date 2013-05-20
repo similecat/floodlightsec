@@ -452,9 +452,9 @@ public class FloodlightModuleLoader {
 		IFloodlightModule[] appMods;
 		int count;
 		
-		appNames = new String[appSet.size()];
-		appThreads = new Thread[appSet.size()];
-		appMods = new IFloodlightModule[appSet.size()];
+		appNames = new String[appSet.size() * FloodlightModuleRunnable.NTHREAD];
+		appThreads = new Thread[appSet.size() * FloodlightModuleRunnable.NTHREAD];
+		appMods = new IFloodlightModule[appSet.size() * FloodlightModuleRunnable.NTHREAD];
 		
 		// Init modules before apps
 		for (IFloodlightModule module : moduleSet) {
@@ -550,12 +550,14 @@ public class FloodlightModuleLoader {
 				}
 				
 				// Init and start thread
-				Thread t = new Thread((FloodlightModuleRunnable) module, "App-"
-						+ module.getClass().getSimpleName() + "-0");
-				appNames[count] = module.getClass().getCanonicalName();
-				appMods[count] = module;
-				appThreads[count] = t;
-				count++;
+				for (int i=0;i<FloodlightModuleRunnable.NTHREAD;i++) {
+					Thread t = new Thread((FloodlightModuleRunnable) module, "App-"
+						+ module.getClass().getSimpleName() + "-" + i);
+					appNames[count] = module.getClass().getCanonicalName();
+					appMods[count] = module;
+					appThreads[count] = t;
+					count++;
+				}
 			}
 		}
 

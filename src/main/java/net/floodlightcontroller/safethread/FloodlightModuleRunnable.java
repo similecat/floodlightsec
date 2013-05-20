@@ -37,6 +37,8 @@ import net.floodlightcontroller.util.QueueWriter;
  * 
  */
 public abstract class FloodlightModuleRunnable implements Runnable, IFloodlightModule {
+	public static final int NTHREAD = 1;
+
 	protected static Logger logger = LoggerFactory
 			.getLogger(FloodlightModuleRunnable.class);
 	
@@ -157,9 +159,9 @@ public abstract class FloodlightModuleRunnable implements Runnable, IFloodlightM
 
 		while (true) {
 			//eventQueueReader.waitsNoTimeout();
-			event = eventQueueReader.read();
+			event = eventQueueReader.pollingRead();
 //			event = eventQueueReader.pollingRead();
-			
+
 			while(event!=null) {
 				// Dispatch and execute
 				Command cmd = dispatchEvent(event);
@@ -171,7 +173,7 @@ public abstract class FloodlightModuleRunnable implements Runnable, IFloodlightM
 				}
 
 				//logger.debug("App queue length: {}", eventQueueReader.queue.size());
-				event = eventQueueReader.read();
+				event = eventQueueReader.pollingRead();
 			}
 		}
 	}

@@ -117,7 +117,7 @@ public class MessageListenerDelegate extends DelegateBase implements IOFMessageL
 		FloodlightContext cntxApp = sanitizer.sanitizeFloodlightContext(cntx, app);
 
 		// Notify app through inter-thread communication
-		Object retMonitor = new Object();
+//		Object retMonitor = new Object();
 		BlockingQueue<OFEventResponse> retQueue = new ArrayBlockingQueue<OFEventResponse>(QueueReader.QUEUE_SIZE);
 		QueueWriter<OFEventResponse> retWriter = new QueueWriter<OFEventResponse>(
 				retMonitor, retQueue);
@@ -131,9 +131,9 @@ public class MessageListenerDelegate extends DelegateBase implements IOFMessageL
 		// Wait return value
 		//logger.debug("Wait reader at receive({})", msg);
 		//retReader.waitsNoTimeout();
-		OFEventResponse response = retReader.read();
+//		OFEventResponse response = retReader.read();
 		//logger.debug("Wait return");
-//		OFEventResponse response = retReader.pollingRead();
+		OFEventResponse response = retReader.pollingRead();
 
 		if (response == null) {
 			return Command.CONTINUE;
