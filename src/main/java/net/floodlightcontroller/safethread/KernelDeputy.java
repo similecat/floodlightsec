@@ -152,16 +152,36 @@ public class KernelDeputy implements Runnable {
 				e.printStackTrace();
 			}
 		}
-		public void PermTranslate(Object obj, List<Object> args){
-			//TODO: Translate every API Call into permission language mode.
-			logger.info("Checking Permission:\t"+obj.getClass().getName()+";"+args.toString());
+		public void PermTranslate(ApiRequest r, Object obj, Method method, List<Object> args){
+			FloodlightModuleRunnable app = r.getCaller();
 			
-			if(obj.getClass().getName().equals("")){
-				;
+			//TODO: Translate every API Call into permission language mode.
+			eval.perm_req.app = "sss";
+			if(obj.getClass().getName().equals("net.floodlightcontroller.devicemanager.internal.DeviceManagerImpl")){
+				if(method == null){
+					return;
+				}
+				else if(method.toString().equals("public void net.floodlightcontroller.devicemanager.internal.DeviceManagerImpl.addListener(net.floodlightcontroller.devicemanager.IDeviceListener)")){
+					eval.perm_req.Switch_level();
+					return;
+				}
+			}
+			else if(obj.getClass().getName().equals("net.floodlightcontroller.core.internal.Controller")){
+				if(method == null){
+					return;
+				}
+				else if(method.toString().equals("public synchronized void net.floodlightcontroller.core.internal.Controller.addOFMessageListener(org.openflow.protocol.OFType,net.floodlightcontroller.core.IOFMessageListener)")){
+					;
+					eval.perm_req.Flow_level();
+					return;
+				}
 			}
 			//Test code.
 			//eval.perm_req.app = "pkt_in_event";
 	        //eval.perm_req.notification = "EVENT_INTERCEPTION";
+			
+			logger.info("Checking Permission:\t"+obj.getClass().getName()+";"+method.toString()+";"+args.toString());
+			
 		}
 		
 		public void setTask(ApiRequest r) {
@@ -256,7 +276,7 @@ public class KernelDeputy implements Runnable {
 			//logger.debug("Checking Permission",obj.getClass().getName(),args.toArray());
 			//logger.debug(obj.getClass().getName());
 			//logger.debug(args.toString());
-			PermTranslate(obj,args);
+			PermTranslate(task, obj, method, args);
 			if(eval.visit(tree)){
 				logger.info("Permission Checking:\t"+"True");
 			}

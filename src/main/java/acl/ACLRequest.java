@@ -18,4 +18,25 @@ public class ACLRequest{
     public String notification = new String("");
     //Statistics
     public String statistics = new String("");
+    
+    //Flowpredicate flowpredicate;
+    //Topo
+    //Action
+    //Ownership
+    //Maxpriority
+    //Flowtable
+    //Notification
+    //Statistics
+    public void APP(String s){
+    	this.app = s;
+    }
+    public void Flow_level(){
+    	this.statistics = "FLOW_LEVLE";
+    }
+    public void Port_level(){
+    	this.statistics = "PORT_LEVLE";
+    }
+    public void Switch_level(){
+    	this.statistics = "SWITCH_LEVLE";
+    }
 };
