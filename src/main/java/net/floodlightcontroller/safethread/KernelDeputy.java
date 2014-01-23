@@ -1,5 +1,8 @@
 package net.floodlightcontroller.safethread;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
@@ -7,10 +10,23 @@ import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
+import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.tree.ParseTree;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
+
+
+import ConsLan.ConsVisitor;
+import ConsLan.constraintLexer;
+import ConsLan.constraintParser;
+import PermLan.EvalVisitor;
+import PermLan.SyntaxVisitor;
+import PermLan.apronLexer;
+import PermLan.apronParser;
+import SyntaxTree.SynTree;
 import net.floodlightcontroller.safethread.message.ApiRequest;
 import net.floodlightcontroller.safethread.message.ApiResponse;
 import net.floodlightcontroller.util.QueueReader;
@@ -75,6 +91,78 @@ public class KernelDeputy implements Runnable {
 	
 	class TaskWorker implements Runnable {
 		private ApiRequest task;
+		private EvalVisitor eval;
+		private SynTree perm;
+		private ConsVisitor cons;
+		private ParseTree tree;
+		
+		//constraint language
+		public EvalVisitor Create_Perm_Visitor(String inputFile) throws IOException{
+			InputStream is = new FileInputStream(inputFile);
+			ANTLRInputStream input = new ANTLRInputStream(is);
+			apronLexer lexer = new apronLexer(input);
+			CommonTokenStream tokens = new CommonTokenStream(lexer);
+			apronParser parser = new apronParser(tokens);
+			tree = parser.program();
+
+			EvalVisitor eval = new EvalVisitor();
+	        return eval;
+		}
+		public SynTree Create_Syn_Tree(String inputFile) throws IOException{
+			InputStream is = new FileInputStream(inputFile);
+			ANTLRInputStream input = new ANTLRInputStream(is);
+			apronLexer lexer = new apronLexer(input);
+			CommonTokenStream tokens = new CommonTokenStream(lexer);
+			apronParser parser = new apronParser(tokens);
+			ParseTree tree = parser.program(); // parse
+
+	        SyntaxVisitor syn = new SyntaxVisitor();
+	        return syn.visit(tree);
+		}
+		public ConsVisitor Create_Con_Visitor(String inputFile) throws IOException{
+			InputStream is = new FileInputStream(inputFile);
+			ANTLRInputStream input = new ANTLRInputStream(is);
+			constraintLexer lexer = new constraintLexer(input);
+			CommonTokenStream tokens = new CommonTokenStream(lexer);
+			constraintParser parser = new constraintParser(tokens);
+			ParseTree tree = parser.program(); // parse
+
+			ConsVisitor con = new ConsVisitor();
+			con.visit(tree);
+	        return con;
+		}
+		
+		public TaskWorker(){
+			super();
+			//loading permission language and constraint language.
+			try {
+				perm = Create_Syn_Tree("sample.perm");
+				cons = Create_Con_Visitor("sample.con");
+				int ret = cons.execute(perm);
+				if(ret > 0){
+					logger.debug("Constraint Checking Success!");
+				}
+				else{
+					logger.debug("Constraint Checking Failed!");
+				}
+				
+				eval = Create_Perm_Visitor("sample.perm");
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		public void PermTranslate(Object obj, List<Object> args){
+			//TODO: Translate every API Call into permission language mode.
+			logger.info("Checking Permission:\t"+obj.getClass().getName()+";"+args.toString());
+			
+			if(obj.getClass().getName().equals("")){
+				;
+			}
+			//Test code.
+			//eval.perm_req.app = "pkt_in_event";
+	        //eval.perm_req.notification = "EVENT_INTERCEPTION";
+		}
 		
 		public void setTask(ApiRequest r) {
 			task = r;
@@ -165,6 +253,16 @@ public class KernelDeputy implements Runnable {
 			}
 			
 			// TODO: Check permissions
+			//logger.debug("Checking Permission",obj.getClass().getName(),args.toArray());
+			//logger.debug(obj.getClass().getName());
+			//logger.debug(args.toString());
+			PermTranslate(obj,args);
+			if(eval.visit(tree)){
+				logger.info("Permission Checking:\t"+"True");
+			}
+			else{
+				logger.info("Permission Checking:\t"+"False");
+			}
 			
 			// Execute request
 			try {

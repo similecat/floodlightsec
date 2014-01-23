@@ -1,0 +1,10 @@
+LET a = { 
+PERM flow_level
+LIMITING FLOW_LEVEL 
+}
+LET b = { 
+PERM flow_level
+LIMITING PORT_LEVEL 
+}
+ASSERT EITHER a OR b
+ASSERT EITHER a OR b
