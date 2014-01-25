@@ -156,23 +156,63 @@ public class KernelDeputy implements Runnable {
 			FloodlightModuleRunnable app = r.getCaller();
 			
 			//TODO: Translate every API Call into permission language mode.
-			eval.perm_req.app = "sss";
+			eval.perm_req.app = app.getClass().getPackage().getName();
+			//DeviceManagerImpl
 			if(obj.getClass().getName().equals("net.floodlightcontroller.devicemanager.internal.DeviceManagerImpl")){
 				if(method == null){
 					return;
 				}
 				else if(method.toString().equals("public void net.floodlightcontroller.devicemanager.internal.DeviceManagerImpl.addListener(net.floodlightcontroller.devicemanager.IDeviceListener)")){
+					//addListener
 					eval.perm_req.Switch_level();
 					return;
 				}
 			}
+			//Controller
 			else if(obj.getClass().getName().equals("net.floodlightcontroller.core.internal.Controller")){
 				if(method == null){
 					return;
 				}
 				else if(method.toString().equals("public synchronized void net.floodlightcontroller.core.internal.Controller.addOFMessageListener(org.openflow.protocol.OFType,net.floodlightcontroller.core.IOFMessageListener)")){
-					;
+					//addOFMessageListener
 					eval.perm_req.Flow_level();
+					return;
+				}
+			}
+			//TopologyManager
+			else if(obj.getClass().getName().equals("net.floodlightcontroller.topology.TopologyManager")){
+				if(method == null){
+					return;
+				}
+				else if(method.toString().equals("public boolean net.floodlightcontroller.topology.TopologyManager.isIncomingBroadcastAllowed(long,short)")){
+					//TODO:isIncomingBroadcastAllowed
+					eval.perm_req.All_flows();
+					return;
+				}
+				else if(method.toString().equals("public long net.floodlightcontroller.topology.TopologyManager.getL2DomainId(long)")){
+					//TODO:getL2DomainId
+					eval.perm_req.All_flows();
+					return;
+				}
+				else if(method.toString().equals("public net.floodlightcontroller.routing.Route net.floodlightcontroller.topology.TopologyManager.getRoute(long,short,long,short)")){
+					//TODO:getRoute
+					eval.perm_req.All_flows();
+					return;
+				}
+			}
+			//OFSwitchImpl
+			else if(obj.getClass().getName().equals("net.floodlightcontroller.core.internal.OFSwitchImpl")){
+				if(method == null){
+					return;
+				}
+				else if(method.toString().equals("public void net.floodlightcontroller.core.internal.OFSwitchImpl.write(org.openflow.protocol.OFMessage,net.floodlightcontroller.core.FloodlightContext) throws java.io.IOException")){
+					//TODO: write; send_pkt_out no mapping from Filter to Permissions
+					eval.perm_req.All_flows();
+					return;
+				}
+				else if(method.toString().equals("public java.lang.Object net.floodlightcontroller.core.internal.OFSwitchImpl.getAttribute(java.lang.String)")){
+					//TODO: getAttribute; send_pkt_out no mapping from Filter to Permissions
+					eval.perm_req.All_flows();
 					return;
 				}
 			}

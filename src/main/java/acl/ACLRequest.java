@@ -19,17 +19,27 @@ public class ACLRequest{
     //Statistics
     public String statistics = new String("");
     
+    public void APP(String s){
+    	this.app = s;
+    }
     //Flowpredicate flowpredicate;
     //Topo
     //Action
     //Ownership
+    public void Own_flows(){
+    	this.app = "OWN_FLOWS";
+    }
+    public void Others_flows(){
+    	this.app = "OTHERS_FLOWS";
+    }
+    public void All_flows(){
+    	this.app = "ALL_FLOWS";
+    }
     //Maxpriority
     //Flowtable
     //Notification
     //Statistics
-    public void APP(String s){
-    	this.app = s;
-    }
+    
     public void Flow_level(){
     	this.statistics = "FLOW_LEVLE";
     }
