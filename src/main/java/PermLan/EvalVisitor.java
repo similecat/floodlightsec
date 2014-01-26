@@ -111,18 +111,12 @@ public class EvalVisitor extends apronBaseVisitor <Boolean>{
     public Boolean visitIp_range_(apronParser.Ip_range_Context ctx){
         //Boolean ret0 = visit(ctx.flow_predicate());
         //Todo: compare IP ip_format WITH MASK ip_format with ACLRequest
-        return true;
+    	return visit(ctx.ip_range());
     }
     //field_
     public Boolean visitField_(apronParser.Field_Context ctx){
-        Boolean ret0 = new Boolean(false);
-        if(perm_req.flowpredicate.field.equals(ctx.field().getText())){
-        	ret0 = visit(ctx.value_list());
-        }
-        else{
-        	return true;
-        }
-        return ret0;
+    	perm_req.setField(ctx.field().getText());
+    	return visit(ctx.value_list());
     }
 //field
 //value_list
@@ -146,24 +140,54 @@ public class EvalVisitor extends apronBaseVisitor <Boolean>{
 //value_range
     //value_range__s
     public Boolean visitValue_range__s(apronParser.Value_range_sContext ctx){
-        Boolean ret0 = new Boolean(false);
-        if(perm_req.flowpredicate.value.equals(Integer.valueOf(ctx.INT().getText()))){
-        	ret0 = true;
+        int v = Integer.valueOf(ctx.INT().getText());
+        if(perm_req.is_field_tcp_dst()){
+        	return perm_req.match.getTransportSource() == v;
         }
-        return ret0;
+        else if(perm_req.is_field_tcp_dst()){
+        	return perm_req.match.getTransportDestination() == v;
+        }
+        else{
+        	return true;
+        }
     }
     //value_range__w
     public Boolean visitValue_range__w(apronParser.Value_range_wContext ctx){
     	//Todo:compare filed and value list.
-        Boolean ret0 = new Boolean(false);
-        if(perm_req.flowpredicate.value.compareTo(Integer.valueOf(ctx.INT(0).getText()))<=0
-        		&&perm_req.flowpredicate.value.compareTo(Integer.valueOf(ctx.INT(0).getText()))>=0){
-        	ret0 = true;
+        int l = Integer.valueOf(ctx.INT(0).getText());
+        int r = Integer.valueOf(ctx.INT(1).getText());
+        int v = 0;
+        if(perm_req.is_field_tcp_dst()){
+        	v = perm_req.match.getTransportSource();
         }
-        return ret0;
+        else if(perm_req.is_field_tcp_dst()){
+        	v = perm_req.match.getTransportDestination();
+        }
+        return v >= l && v <= r;
     }
 //ip_range
-//ip_format    
+    private int StringToIP(String ipAddr){
+    	int ret = 0;
+    	String[] ipArr = ipAddr.split("\\.");
+        ret |= (Integer.parseInt(ipArr[0]) & 0xFF)<<24;
+        ret |= (Integer.parseInt(ipArr[1]) & 0xFF)<<16;
+        ret |= (Integer.parseInt(ipArr[2]) & 0xFF)<<8;
+        ret |= (Integer.parseInt(ipArr[3]) & 0xFF)<<0;
+        return ret;
+    }
+    public Boolean visitIp_range(apronParser.Ip_rangeContext ctx){
+        //Boolean ret0 = visit(ctx.flow_predicate());
+        //Todo: compare IP ip_format WITH MASK ip_format with ACLRequest
+    	if(perm_req.match == null)
+    		return true;
+    	int ip = perm_req.match.getNetworkSource();
+    	int mask = ~((1<<perm_req.match.getNetworkSourceMaskLen())-1);
+    	String s = ctx.ip_format(0).getText();
+    	String mk = ctx.ip_format(1).getText();
+    	int _ip = StringToIP(s);
+    	int _mask = StringToIP(mk);
+        return (ip&mask) == (_ip&_mask);
+    }
 //topo
     //physical_topo_
     public Boolean visitPhysical_topo_(apronParser.Physical_topo_Context ctx){
@@ -330,7 +354,7 @@ public class EvalVisitor extends apronBaseVisitor <Boolean>{
     //drop_
     public Boolean visitDrop_(apronParser.Drop_Context ctx){
     	Boolean ret0 = new Boolean(false);
-    	if(perm_req.action.op.equals("DROP")){
+    	if(perm_req.check_drop()){
     		ret0 = true;
     	}
         return ret0;
@@ -339,7 +363,7 @@ public class EvalVisitor extends apronBaseVisitor <Boolean>{
     //forward_
     public Boolean visitForward_(apronParser.Forward_Context ctx){
     	Boolean ret0 = new Boolean(false);
-    	if(perm_req.action.op.equals("FORWARD")){
+    	if(perm_req.check_forward()){
     		ret0 = true;
     	}
         return ret0;
@@ -348,7 +372,7 @@ public class EvalVisitor extends apronBaseVisitor <Boolean>{
     //modify_
     public Boolean visitModify_(apronParser.Modify_Context ctx){
     	Boolean ret0 = new Boolean(false);
-    	if(perm_req.action.op.equals("MODIFY")){
+    	if(perm_req.check_modify()){
     		ret0 = true;
     	}
         return ret0;
@@ -357,9 +381,7 @@ public class EvalVisitor extends apronBaseVisitor <Boolean>{
     //modify_field_
     public Boolean visitModify_field_(apronParser.Modify_field_Context ctx){
     	Boolean ret0 = new Boolean(false);
-    	if(perm_req.action.op.equals("MODIFYFIELD")){
-    		ret0 = visit(ctx.field_list());
-    	}
+    	ret0 = visit(ctx.field_list());
         return ret0;
         
     }
@@ -367,7 +389,7 @@ public class EvalVisitor extends apronBaseVisitor <Boolean>{
     //filed__wo
     public Boolean visitFiled__wo(apronParser.Filed__woContext ctx){
     	Boolean ret0 = new Boolean(false);
-    	if(perm_req.action.field.equals(ctx.field().getText())){
+    	if(perm_req.check_modify(ctx.field().getText())){
     		ret0 = true;
     	}
         return ret0;
@@ -376,7 +398,7 @@ public class EvalVisitor extends apronBaseVisitor <Boolean>{
     //field__w
     public Boolean visitField__w(apronParser.Field__wContext ctx){
     	Boolean ret0 = new Boolean(false);
-    	if(perm_req.action.op.equals(ctx.field().getText())){
+    	if(perm_req.check_modify(ctx.field().getText())){
     		ret0 = true;
     	}
     	else{

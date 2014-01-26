@@ -13,8 +13,16 @@ import java.util.concurrent.BlockingQueue;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
+import org.openflow.protocol.OFFlowMod;
+import org.openflow.protocol.OFMessage;
+import org.openflow.protocol.OFPacketOut;
+import org.openflow.protocol.OFType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+
+
+
 
 
 
@@ -205,10 +213,25 @@ public class KernelDeputy implements Runnable {
 				if(method == null){
 					return;
 				}
+				//sw.write(flow_mod,null);
+				//sw.write(pkt_out,null);
 				else if(method.toString().equals("public void net.floodlightcontroller.core.internal.OFSwitchImpl.write(org.openflow.protocol.OFMessage,net.floodlightcontroller.core.FloodlightContext) throws java.io.IOException")){
 					//TODO: write; send_pkt_out no mapping from Filter to Permissions
-					eval.perm_req.All_flows();
-					return;
+					//sw.write includes flow_mod.
+					OFMessage Msg = (OFMessage) args.get(0);
+					if(Msg.getType().equals(OFType.FLOW_MOD)){
+						OFFlowMod msg = (OFFlowMod) args.get(0);
+						eval.perm_req.MsgTranslate(msg);
+						return;
+					}
+					else if(Msg.getType().equals(OFType.PACKET_OUT)){
+						OFPacketOut msg = (OFPacketOut) args.get(0);
+						eval.perm_req.MsgTranslate(msg);
+						return;
+					}
+					else if(Msg.getType().equals(OFType.FLOW_REMOVED)){
+						;
+					}
 				}
 				else if(method.toString().equals("public java.lang.Object net.floodlightcontroller.core.internal.OFSwitchImpl.getAttribute(java.lang.String)")){
 					//TODO: getAttribute; send_pkt_out no mapping from Filter to Permissions
@@ -220,7 +243,7 @@ public class KernelDeputy implements Runnable {
 			//eval.perm_req.app = "pkt_in_event";
 	        //eval.perm_req.notification = "EVENT_INTERCEPTION";
 			
-			logger.info("Checking Permission:\t"+obj.getClass().getName()+";"+method.toString()+";"+args.toString());
+			logger.info("Missing Permission:\t"+obj.getClass().getName()+";"+method.toString()+";"+args.toString());
 			
 		}
 		
