@@ -1,28 +1,26 @@
-package SyntaxTree;
+package apron.syntaxtree;
 
 import java.util.Vector;
-import java.util.Queue;
-import java.util.LinkedList;
-public class SynTree {
+public class SyntaxTree{
 	public NodeType Type = NodeType.none;
 	public Operation op = Operation.none;
-	public Vector<SynTree> children = new Vector<SynTree>();
+	public Vector<SyntaxTree> children = new Vector<SyntaxTree>();
 	
 	public String _string = new String("");
 	public Integer _int = new Integer(0);
 	public Float _float = new Float(0);
 	
-	public SynTree(){
+	public SyntaxTree(){
 		;
 	}
-	public SynTree(NodeType t){
+	public SyntaxTree(NodeType t){
 		Type = t;
 	}
-	public SynTree(NodeType t, Operation o){
+	public SyntaxTree(NodeType t, Operation o){
 		Type = t;
 		op = o;
 	}
-	public void add(SynTree e){
+	public void add(SyntaxTree e){
 		children.add(e);
 		return;
 	}
@@ -36,20 +34,29 @@ public class SynTree {
 		_float = e;
 	}
 	public void add(String e){
-		SynTree t = new SynTree(NodeType.STRING);
+		SyntaxTree t = new SyntaxTree(NodeType.STRING);
 		t.data(e);
 		this.add(t);
 	}
 	public void add(Integer e){
-		SynTree t = new SynTree(NodeType.INT);
+		SyntaxTree t = new SyntaxTree(NodeType.INT);
 		t.data(e);
 		this.add(t);
 	}
 	public void add(Float e){
-		SynTree t = new SynTree(NodeType.FLOAT);
+		SyntaxTree t = new SyntaxTree(NodeType.FLOAT);
 		t.data(e);
 		this.add(t);
 	}
+	
+	//access children
+	public int childs(){
+		return this.children.size();
+	}
+	public SyntaxTree child(int num){
+		return this.children.elementAt(num);
+	}
+	
 	//type
 	public boolean is_top(){
 		return this.Type.is_top();
@@ -69,53 +76,23 @@ public class SynTree {
 	public boolean is_err(){
 		return this.Type.is_err();
 	}
-	
-	public void print(){
-		Queue<SynTree> q = new LinkedList<SynTree>();
-		Queue<Integer> qq = new LinkedList<Integer>();
-		Integer fa[] = new Integer[10000];
-		int now = 0;
-		fa[0] = 0;
-		q.add(this);
-		qq.add(Integer.valueOf(now));
-		while(!q.isEmpty()){
-			SynTree tmp = q.remove();
-			int ff = qq.remove();
-			System.out.println(tmp.Type.toString()+" "+tmp.op.toString()+
-					" "+tmp.children.size()+" "+ff+" "+fa[ff]);
-			//System.out.println("******************************");
-			for(int i = 0; i < tmp.children.size(); ++i){
-				q.add(tmp.children.elementAt(i));
-				++now;
-				fa[now] = ff;
-				qq.add(now);
-			}
-		}
-	}
-	public void print(SynTree tmp){
-		System.out.println(tmp.Type.toString()+" "+tmp.op.toString());
-		System.out.println("******************************");
-		for(int i = 0; i < tmp.children.size(); ++i){
-			print(tmp.children.elementAt(i));
-		}
-	}
-	public void copy(SynTree t){
+	public void copy(SyntaxTree t){
 		this.Type = t.Type;
 		this.op = t.op;
 		this._float = t._float;
 		this._int = t._int;
 		this._string = t._string;
 	}
-	public void rebuild(){
-		SynTree t = this;
+	public void reBuild(){
+		SyntaxTree t = this;
 		if(t.Type.equals(NodeType.STRING)||t.Type.equals(NodeType.INT)||
 				t.Type.equals(NodeType.FLOAT)){
 			return;
 		}
-		Vector<SynTree> ret = new Vector<SynTree>();
+		Vector<SyntaxTree> ret = new Vector<SyntaxTree>();
 		for(int i = 0; i < t.children.size(); ++i){
-			SynTree tmp = t.children.elementAt(i);
-			tmp.rebuild();
+			SyntaxTree tmp = t.children.elementAt(i);
+			tmp.reBuild();
 			
 			//combine
 			if(t.Type.equals(NodeType.program)&&
@@ -168,46 +145,46 @@ public class SynTree {
 		}
 		t.children = ret;
 	}
-	public void reducenot(){
-		SynTree t = this;
+	public void reduceNot(){
+		SyntaxTree t = this;
 		if(!t.Type.is_expr()&&
 				!t.Type.is_top()){
 			return;
 		}
-		Vector<SynTree> ret = new Vector<SynTree>();
-		SynTree children = t.children.elementAt(0);
+		Vector<SyntaxTree> ret = new Vector<SyntaxTree>();
+		SyntaxTree children = t.children.elementAt(0);
 		if(t.op.equals(Operation.NOT)&&
 				children.op.equals(Operation.AND)){
 			t.op = Operation.OR;
 			for(int i = 0; i < children.children.size(); ++i){
-				SynTree tmp = new SynTree(NodeType.filter_expr,Operation.NOT);
+				SyntaxTree tmp = new SyntaxTree(NodeType.filter_expr,Operation.NOT);
 				tmp.add(children.children.elementAt(i));
 				ret.add(tmp);
-				tmp.reducenot();
+				tmp.reduceNot();
 			}
 		}
 		else if(t.op.equals(Operation.NOT)&&
 				children.op.equals(Operation.OR)){
 			t.op = Operation.OR;
 			for(int i = 0; i < children.children.size(); ++i){
-				SynTree tmp = new SynTree(NodeType.filter_expr,Operation.NOT);
+				SyntaxTree tmp = new SyntaxTree(NodeType.filter_expr,Operation.NOT);
 				tmp.add(children.children.elementAt(i));
 				ret.add(tmp);
-				tmp.reducenot();
+				tmp.reduceNot();
 			}
 		}
 		else if(t.op.equals(Operation.NOT)&&
 				children.op.equals(Operation.NOT)){
 			t.op = children.children.elementAt(0).op;
 			for(int i = 0; i < children.children.elementAt(0).children.size(); ++i){
-				children.children.elementAt(0).children.elementAt(i).reducenot();
+				children.children.elementAt(0).children.elementAt(i).reduceNot();
 				ret.add(children.children.elementAt(0).children.elementAt(i));
 			}
 		}
 		else{
 			for(int i = 0; i < t.children.size(); ++i){
 				children = t.children.elementAt(i);
-				children.reducenot();
+				children.reduceNot();
 				ret.add(children);
 			}
 		}
@@ -238,8 +215,8 @@ public class SynTree {
 		}
 		return -1;
 	}
-	public void reduceand(){
-		SynTree t = this;
+	public void reduceAnd(){
+		SyntaxTree t = this;
 		if(!t.Type.is_expr()&&
 				!t.Type.is_top()){
 			return;
@@ -250,8 +227,8 @@ public class SynTree {
 		if(t.op.equals(Operation.AND)||
 				t.op.equals(Operation.OR)){
 			while((pos = this.check_op(t.op)) >= 0){
-				Vector<SynTree> ret = new Vector<SynTree>();
-				SynTree children = t.children.elementAt(pos);
+				Vector<SyntaxTree> ret = new Vector<SyntaxTree>();
+				SyntaxTree children = t.children.elementAt(pos);
 				for(int i = 0; i < pos; ++i){
 					ret.add(t.children.elementAt(i));
 				}
@@ -273,7 +250,7 @@ public class SynTree {
 			}
 			
 			//Distributive law
-			Vector<SynTree> ret = new Vector<SynTree>();
+			Vector<SyntaxTree> ret = new Vector<SyntaxTree>();
 			Integer stat[] = new Integer[1010];
 			Integer MAX[] = new Integer[1010];
 			for(int i = 0; i < t.children.size(); ++i){
@@ -288,7 +265,7 @@ public class SynTree {
 				}
 			}
 			while(stat[0] < MAX[0]){
-				SynTree nTree = new SynTree(NodeType.filter_expr,Operation.AND);
+				SyntaxTree nTree = new SyntaxTree(NodeType.filter_expr,Operation.AND);
 				for(int i = 0; i < t.children.size(); ++i){
 					if(t.children.elementAt(i).op.equals(Operation.OR)){
 						nTree.add(t.children.elementAt(i).children.elementAt(stat[i]));
@@ -314,18 +291,18 @@ public class SynTree {
 			
 			//reduce recursively
 			for(int i = 0; i < t.children.size(); ++i){
-				t.children.elementAt(i).reduceand();
+				t.children.elementAt(i).reduceAnd();
 			}
 		}
 		else{
 			for(int i = 0; i < t.children.size(); ++i){
-				SynTree children = t.children.elementAt(i);
-				children.reduceand();
+				SyntaxTree children = t.children.elementAt(i);
+				children.reduceAnd();
 			}
 		}
 	}
-	public void reduceor(){
-		SynTree t = this;
+	public void reduceOr(){
+		SyntaxTree t = this;
 		if(!t.Type.is_expr()&&
 				!t.Type.is_top()){
 			return;
@@ -336,8 +313,8 @@ public class SynTree {
 		if(t.op.equals(Operation.AND)||
 				t.op.equals(Operation.OR)){
 			while((pos = this.check_op(t.op)) >= 0){
-				Vector<SynTree> ret = new Vector<SynTree>();
-				SynTree children = t.children.elementAt(pos);
+				Vector<SyntaxTree> ret = new Vector<SyntaxTree>();
+				SyntaxTree children = t.children.elementAt(pos);
 				for(int i = 0; i < pos; ++i){
 					ret.add(t.children.elementAt(i));
 				}
@@ -358,7 +335,7 @@ public class SynTree {
 			}
 			
 			//Distributive law
-			Vector<SynTree> ret = new Vector<SynTree>();
+			Vector<SyntaxTree> ret = new Vector<SyntaxTree>();
 			Integer stat[] = new Integer[1010];
 			Integer MAX[] = new Integer[1010];
 			for(int i = 0; i < t.children.size(); ++i){
@@ -373,7 +350,7 @@ public class SynTree {
 				}
 			}
 			while(stat[0] < MAX[0]){
-				SynTree nTree = new SynTree(NodeType.filter_expr,Operation.OR);
+				SyntaxTree nTree = new SyntaxTree(NodeType.filter_expr,Operation.OR);
 				for(int i = 0; i < t.children.size(); ++i){
 					if(t.children.elementAt(i).op.equals(Operation.AND)){
 						nTree.add(t.children.elementAt(i).children.elementAt(stat[i]));
@@ -399,36 +376,36 @@ public class SynTree {
 			
 			//reduce recursively
 			for(int i = 0; i < t.children.size(); ++i){
-				t.children.elementAt(i).reduceor();
+				t.children.elementAt(i).reduceOr();
 			}
 		}
 		else{
 			for(int i = 0; i < t.children.size(); ++i){
-				SynTree children = t.children.elementAt(i);
-				children.reduceor();
+				SyntaxTree children = t.children.elementAt(i);
+				children.reduceOr();
 			}
 		}
 	}
-	public void reduce2dnf(){
-		this.reducenot();
-		this.reduceand();
+	public void reduce2Dnf(){
+		this.reduceNot();
+		this.reduceAnd();
 	}
-	public void reduce2cnf(){
-		this.reducenot();
-		this.reduceor();
+	public void reduce2Cnf(){
+		this.reduceNot();
+		this.reduceOr();
 	}
-	public SynTree clone_tree(){
-		SynTree t = new SynTree();
+	public SyntaxTree cloneTree(){
+		SyntaxTree t = new SyntaxTree();
 		t.copy(this);
-		Vector<SynTree> ret = new Vector<SynTree>();
+		Vector<SyntaxTree> ret = new Vector<SyntaxTree>();
 		for(int i = 0; i < this.children.size(); ++i){
-			ret.add(this.children.elementAt(i).clone_tree());
+			ret.add(this.children.elementAt(i).cloneTree());
 		}
 		t.children = ret;
 		return t;
 	}
-	public boolean compareTo(SynTree B){
-		SynTree A = this;
+	public boolean compareTo(SyntaxTree B){
+		SyntaxTree A = this;
 		if(!A.Type.equals(B.Type)){
 			return false;
 		}
@@ -544,14 +521,14 @@ public class SynTree {
 		}
 		return true;
 	}
-	public boolean is_include_top(SynTree B){
-		SynTree A = this;
+	public boolean isIncludeTop(SyntaxTree B){
+		SyntaxTree A = this;
 		if(A.Type.is_top()&&B.Type.is_top()){
 			//every b's son is included by one of a's son.
 			for(int i = 0; i < B.children.size(); ++i){
 				boolean fg = false;
 				for(int j = 0; j < A.children.size(); ++j){
-					if(A.children.elementAt(j).is_include_top(B.children.elementAt(i))){
+					if(A.children.elementAt(j).isIncludeTop(B.children.elementAt(i))){
 						fg = true;
 						break;
 					}
@@ -568,7 +545,7 @@ public class SynTree {
 		else if(A.Type.is_top()&&B.Type.is_expr()){
 			//B is included by one of a's son.
 			for(int j = 0; j < A.children.size(); ++j){
-				if(A.children.elementAt(j).is_include_top(B)){
+				if(A.children.elementAt(j).isIncludeTop(B)){
 					return true;
 				}
 			}
@@ -577,7 +554,7 @@ public class SynTree {
 		else if(B.Type.is_expr()){
 			//every b's son is included by A.
 			for(int i = 0; i < A.children.size(); ++i){
-				if(!A.is_include_top(B.children.elementAt(i))){
+				if(!A.isIncludeTop(B.children.elementAt(i))){
 					return false;
 				}
 			}
@@ -588,7 +565,7 @@ public class SynTree {
 				if(B.op.equals(Operation.AND)){
 					//b is included by one of a's children.
 					for(int j = 0; j < A.children.size(); ++j){
-						if(A.children.elementAt(j).is_include_top(B)){
+						if(A.children.elementAt(j).isIncludeTop(B)){
 							return true;
 						}
 					}
@@ -598,7 +575,7 @@ public class SynTree {
 					//every a's son includes every b's son
 					for(int i = 0; i < A.children.size(); ++i){
 						for(int j = 0; j < B.children.size(); ++j){
-							if(!A.children.elementAt(i).is_include_top(B.children.elementAt(j))){
+							if(!A.children.elementAt(i).isIncludeTop(B.children.elementAt(j))){
 								return false;
 							}
 						}
@@ -609,7 +586,7 @@ public class SynTree {
 						||A.op.equals(Operation.NOT)){
 					//every a's son includes every b
 					for(int i = 0; i < A.children.size(); ++i){
-						if(!A.children.elementAt(i).is_include_top(B)){
+						if(!A.children.elementAt(i).isIncludeTop(B)){
 							return false;
 						}
 					}
@@ -621,7 +598,7 @@ public class SynTree {
 					//one of b's son is included by a's son;
 					for(int i = 0; i < B.children.size(); ++i){
 						for(int j = 0; j < A.children.size(); ++j){
-							if(A.children.elementAt(j).is_include_top(B.children.elementAt(i))){
+							if(A.children.elementAt(j).isIncludeTop(B.children.elementAt(i))){
 								return true;
 							}
 						}
@@ -631,7 +608,7 @@ public class SynTree {
 				else if(B.op.equals(Operation.OR)){
 					//a includes every b's son
 					for(int i = 0; i < B.children.size(); ++i){
-						if(!A.is_include_top(B.children.elementAt(i))){
+						if(!A.isIncludeTop(B.children.elementAt(i))){
 							return false;
 						}
 					}
@@ -641,7 +618,7 @@ public class SynTree {
 						||B.op.equals(Operation.NOT)){
 					//b is included by one of a's children.
 					for(int j = 0; j < A.children.size(); ++j){
-						if(A.children.elementAt(j).is_include_top(B)){
+						if(A.children.elementAt(j).isIncludeTop(B)){
 							return true;
 						}
 					}
@@ -653,7 +630,7 @@ public class SynTree {
 				if(B.op.equals(Operation.AND)){
 					//a includes one of b's son.
 					for(int i = 0; i < B.children.size(); ++i){
-						if(A.is_include_top(B.children.elementAt(i))){
+						if(A.isIncludeTop(B.children.elementAt(i))){
 							return true;
 						}
 					}
@@ -662,7 +639,7 @@ public class SynTree {
 				else if(B.op.equals(Operation.OR)){
 					//a includes every b's son.
 					for(int i = 0; i < B.children.size(); ++i){
-						if(!A.is_include_top(B.children.elementAt(i))){
+						if(!A.isIncludeTop(B.children.elementAt(i))){
 							return false;
 						}
 					}
@@ -676,39 +653,14 @@ public class SynTree {
 			}
 			return false;
 		}
-		/*
-		else if(A.Type.is_expr()){
-			//
-			for(int j = 0; j < A.children.size(); ++j){
-				if(A.children.elementAt(j).is_include_top(B)){
-					return true;
-				}
-			}
-			return false;
-		}
-		else if(B.Type.is_expr()){
-			//
-			for(int j = 0; j < B.children.size(); ++j){
-				if(!A.is_include_top(B)){
-					return false;
-				}
-			}
-			return true;
-		}
-		else{
-			return A.compareTo(B);
-		}*/
 	}
-	public boolean is_include(SynTree b){
-		SynTree A = this.clone_tree();
-		SynTree B = b.clone_tree();
-		A.rebuild();
-		A.reduce2cnf();
-		//A.print();
-		//System.out.println("******************************");
-		B.rebuild();
-		B.reduce2dnf();
-		//B.print();
-		return A.is_include_top(B);		
+	public boolean isInclude(SyntaxTree b){
+		SyntaxTree A = this.cloneTree();
+		SyntaxTree B = b.cloneTree();
+		A.reBuild();
+		A.reduce2Cnf();
+		B.reBuild();
+		B.reduce2Dnf();
+		return A.isIncludeTop(B);		
 	}
 }

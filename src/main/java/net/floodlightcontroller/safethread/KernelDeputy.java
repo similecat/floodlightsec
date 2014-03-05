@@ -20,21 +20,14 @@ import org.openflow.protocol.OFType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
-
-
-
-
-
-
-import ConsLan.ConsVisitor;
-import ConsLan.constraintLexer;
-import ConsLan.constraintParser;
-import PermLan.EvalVisitor;
-import PermLan.SyntaxVisitor;
-import PermLan.apronLexer;
-import PermLan.apronParser;
-import SyntaxTree.SynTree;
+import apron.constraint.ConstraintGenerator;
+import apron.constraint.ConstraintLexer;
+import apron.constraint.ConstraintParser;
+import apron.permissionlanguage.Evaluator;
+import apron.permissionlanguage.SyntaxGenerator;
+import apron.permissionlanguage.ApronLexer;
+import apron.permissionlanguage.ApronParser;
+import apron.syntaxtree.SyntaxTree;
 import net.floodlightcontroller.safethread.message.ApiRequest;
 import net.floodlightcontroller.safethread.message.ApiResponse;
 import net.floodlightcontroller.util.QueueReader;
@@ -99,43 +92,43 @@ public class KernelDeputy implements Runnable {
 	
 	class TaskWorker implements Runnable {
 		private ApiRequest task;
-		private EvalVisitor eval;
-		private SynTree perm;
-		private ConsVisitor cons;
+		private Evaluator eval;
+		private SyntaxTree perm;
+		private ConstraintGenerator cons;
 		private ParseTree tree;
 		
 		//constraint language
-		public EvalVisitor Create_Perm_Visitor(String inputFile) throws IOException{
+		public Evaluator Create_Perm_Visitor(String inputFile) throws IOException{
 			InputStream is = new FileInputStream(inputFile);
 			ANTLRInputStream input = new ANTLRInputStream(is);
-			apronLexer lexer = new apronLexer(input);
+			ApronLexer lexer = new ApronLexer(input);
 			CommonTokenStream tokens = new CommonTokenStream(lexer);
-			apronParser parser = new apronParser(tokens);
+			ApronParser parser = new ApronParser(tokens);
 			tree = parser.program();
 
-			EvalVisitor eval = new EvalVisitor();
-	        return eval;
+			SyntaxGenerator syn = new SyntaxGenerator();
+	        return new Evaluator(syn.visit(tree));
 		}
-		public SynTree Create_Syn_Tree(String inputFile) throws IOException{
+		public SyntaxTree Create_Syn_Tree(String inputFile) throws IOException{
 			InputStream is = new FileInputStream(inputFile);
 			ANTLRInputStream input = new ANTLRInputStream(is);
-			apronLexer lexer = new apronLexer(input);
+			ApronLexer lexer = new ApronLexer(input);
 			CommonTokenStream tokens = new CommonTokenStream(lexer);
-			apronParser parser = new apronParser(tokens);
+			ApronParser parser = new ApronParser(tokens);
 			ParseTree tree = parser.program(); // parse
 
-	        SyntaxVisitor syn = new SyntaxVisitor();
+	        SyntaxGenerator syn = new SyntaxGenerator();
 	        return syn.visit(tree);
 		}
-		public ConsVisitor Create_Con_Visitor(String inputFile) throws IOException{
+		public ConstraintGenerator Create_Con_Visitor(String inputFile) throws IOException{
 			InputStream is = new FileInputStream(inputFile);
 			ANTLRInputStream input = new ANTLRInputStream(is);
-			constraintLexer lexer = new constraintLexer(input);
+			ConstraintLexer lexer = new ConstraintLexer(input);
 			CommonTokenStream tokens = new CommonTokenStream(lexer);
-			constraintParser parser = new constraintParser(tokens);
+			ConstraintParser parser = new ConstraintParser(tokens);
 			ParseTree tree = parser.program(); // parse
 
-			ConsVisitor con = new ConsVisitor();
+			ConstraintGenerator con = new ConstraintGenerator();
 			con.visit(tree);
 	        return con;
 		}
@@ -164,7 +157,7 @@ public class KernelDeputy implements Runnable {
 			FloodlightModuleRunnable app = r.getCaller();
 			
 			//TODO: Translate every API Call into permission language mode.
-			eval.perm_req.app = app.getClass().getPackage().getName();
+			eval.permReq.app = app.getClass().getPackage().getName();
 			//DeviceManagerImpl
 			if(obj.getClass().getName().equals("net.floodlightcontroller.devicemanager.internal.DeviceManagerImpl")){
 				if(method == null){
@@ -172,7 +165,7 @@ public class KernelDeputy implements Runnable {
 				}
 				else if(method.toString().equals("public void net.floodlightcontroller.devicemanager.internal.DeviceManagerImpl.addListener(net.floodlightcontroller.devicemanager.IDeviceListener)")){
 					//addListener
-					eval.perm_req.Switch_level();
+					eval.permReq.eventInterception();
 					return;
 				}
 			}
@@ -183,7 +176,7 @@ public class KernelDeputy implements Runnable {
 				}
 				else if(method.toString().equals("public synchronized void net.floodlightcontroller.core.internal.Controller.addOFMessageListener(org.openflow.protocol.OFType,net.floodlightcontroller.core.IOFMessageListener)")){
 					//addOFMessageListener
-					eval.perm_req.Flow_level();
+					eval.permReq.eventInterception();
 					return;
 				}
 			}
@@ -194,17 +187,14 @@ public class KernelDeputy implements Runnable {
 				}
 				else if(method.toString().equals("public boolean net.floodlightcontroller.topology.TopologyManager.isIncomingBroadcastAllowed(long,short)")){
 					//TODO:isIncomingBroadcastAllowed
-					eval.perm_req.All_flows();
 					return;
 				}
 				else if(method.toString().equals("public long net.floodlightcontroller.topology.TopologyManager.getL2DomainId(long)")){
 					//TODO:getL2DomainId
-					eval.perm_req.All_flows();
 					return;
 				}
 				else if(method.toString().equals("public net.floodlightcontroller.routing.Route net.floodlightcontroller.topology.TopologyManager.getRoute(long,short,long,short)")){
 					//TODO:getRoute
-					eval.perm_req.All_flows();
 					return;
 				}
 			}
@@ -221,27 +211,25 @@ public class KernelDeputy implements Runnable {
 					OFMessage Msg = (OFMessage) args.get(0);
 					if(Msg.getType().equals(OFType.FLOW_MOD)){
 						OFFlowMod msg = (OFFlowMod) args.get(0);
-						eval.perm_req.MsgTranslate(msg);
+						eval.permReq.MsgTranslate(msg);
 						return;
 					}
+					/*
 					else if(Msg.getType().equals(OFType.PACKET_OUT)){
 						OFPacketOut msg = (OFPacketOut) args.get(0);
-						eval.perm_req.MsgTranslate(msg);
+						eval.permReq.MsgTranslate(msg);
 						return;
-					}
+					}*/
 					else if(Msg.getType().equals(OFType.FLOW_REMOVED)){
 						;
 					}
 				}
 				else if(method.toString().equals("public java.lang.Object net.floodlightcontroller.core.internal.OFSwitchImpl.getAttribute(java.lang.String)")){
 					//TODO: getAttribute; send_pkt_out no mapping from Filter to Permissions
-					eval.perm_req.All_flows();
+					eval.permReq.allFlows();
 					return;
 				}
 			}
-			//Test code.
-			//eval.perm_req.app = "pkt_in_event";
-	        //eval.perm_req.notification = "EVENT_INTERCEPTION";
 			
 			logger.info("Missing Permission:\t"+obj.getClass().getName()+";"+method.toString()+";"+args.toString());
 			
@@ -258,6 +246,7 @@ public class KernelDeputy implements Runnable {
 			Class<?>[] argClasses = new Class[args.size()];
 			Method method = null;
 			Object ret = null;
+			Boolean permissionCheck = false;
 			
 			for(int i=0;i<args.size();i++) {
 				if (args.get(i) != null) {
@@ -336,11 +325,8 @@ public class KernelDeputy implements Runnable {
 			}
 			
 			// TODO: Check permissions
-			//logger.debug("Checking Permission",obj.getClass().getName(),args.toArray());
-			//logger.debug(obj.getClass().getName());
-			//logger.debug(args.toString());
 			PermTranslate(task, obj, method, args);
-			if(eval.visit(tree)){
+			if(permissionCheck = eval.execute()){
 				logger.info("Permission Checking:\t"+"True");
 			}
 			else{
@@ -349,7 +335,7 @@ public class KernelDeputy implements Runnable {
 			
 			// Execute request
 			try {
-				if (method != null) {
+				if (method != null&&permissionCheck) {
 					ret = method.invoke(obj, args.toArray());
 				}
 			} catch (IllegalArgumentException e) {

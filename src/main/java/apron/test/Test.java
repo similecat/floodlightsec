@@ -1,8 +1,7 @@
-package apron_j;
+package apron.test;
 
-import ConsLan.*;
-import PermLan.*;
-import SyntaxTree.*;
+import apron.constraint.*;
+import apron.permissionlanguage.*;
 
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -12,41 +11,50 @@ import java.io.IOException;
 import java.io.InputStream;
 
 public class Test{
-	public static SynTree Create_Syn_Tree(String inputFile) throws IOException{
+	public static Evaluator CreateEvaluator(String inputFile) throws IOException{
 		InputStream is = new FileInputStream(inputFile);
 		ANTLRInputStream input = new ANTLRInputStream(is);
-		apronLexer lexer = new apronLexer(input);
+		ApronLexer lexer = new ApronLexer(input);
 		CommonTokenStream tokens = new CommonTokenStream(lexer);
-		apronParser parser = new apronParser(tokens);
+		ApronParser parser = new ApronParser(tokens);
 		ParseTree tree = parser.program(); // parse
 
-        SyntaxVisitor syn = new SyntaxVisitor();
-        return syn.visit(tree);
+        SyntaxGenerator syn = new SyntaxGenerator();
+        return new Evaluator(syn.visit(tree));
 	}
-	public static ConsVisitor Create_Con_Visitor(String inputFile) throws IOException{
+	public static ConstraintGenerator Create_Con_Visitor(String inputFile) throws IOException{
 		InputStream is = new FileInputStream(inputFile);
 		ANTLRInputStream input = new ANTLRInputStream(is);
-		constraintLexer lexer = new constraintLexer(input);
+		ConstraintLexer lexer = new ConstraintLexer(input);
 		CommonTokenStream tokens = new CommonTokenStream(lexer);
-		constraintParser parser = new constraintParser(tokens);
+		ConstraintParser parser = new ConstraintParser(tokens);
 		ParseTree tree = parser.program(); // parse
 
-		ConsVisitor con = new ConsVisitor();
+		ConstraintGenerator con = new ConstraintGenerator();
 		con.visit(tree);
         return con;
 	}
     public static void main(String[] args) throws Exception {
+        System.out.println("Start!");
+        /*
         String inputFile = null;
         if (args.length > 0) inputFile = args[0];
         InputStream is = System.in;
         if ( inputFile!=null ) is = new FileInputStream(inputFile);
         ANTLRInputStream input = new ANTLRInputStream(is);
-        apronLexer lexer = new apronLexer(input);
+        ApronLexer lexer = new ApronLexer(input);
         CommonTokenStream tokens = new CommonTokenStream(lexer);
-        apronParser parser = new apronParser(tokens);
+        ApronParser parser = new ApronParser(tokens);
         ParseTree tree = parser.program(); // parse
-
-        EvalVisitor eval = new EvalVisitor();
+        */
+        Evaluator eval = CreateEvaluator("sample.perm");
+        eval.permReq.app = "pkt_in_event";
+        eval.permReq.notification = "EVENT_INTERCEPTION";
+        System.out.println(eval.execute()?"True":"False");
+        System.out.println("Done!");
+        
+/*
+        EvaluateVisitor eval = new EvaluateVisitor();
         eval.perm_req.app = "pkt_in_event";
         eval.perm_req.notification = "EVENT_INTERCEPTION";
         //eval.visit(tree);
@@ -58,22 +66,24 @@ public class Test{
         else{
             System.out.println("False");
         }
-        
-        SyntaxVisitor syn = new SyntaxVisitor();
-        SynTree syntree = syn.visit(tree);
+*/
+/*
+        SyntaxGenerator syn = new SyntaxGenerator();
+        SyntaxTree syntree = syn.visit(tree);
         //syntree.print();
         syntree.rebuild();
         //syntree.reduce2dnf();
         //syntree.print();
         //syntree.reduce2cnf();
         //syntree.print();
-        SynTree a = Create_Syn_Tree("sample.a");
+        SyntaxTree a = Create_Syn_Tree("sample.a");
         a.rebuild();
-        SynTree b = Create_Syn_Tree("sample.b");
+        SyntaxTree b = Create_Syn_Tree("sample.b");
         System.out.println(a.is_include(b));
         
         ConsVisitor c = Create_Con_Visitor("sample.con");
         //c.execute();
         System.out.println(c.execute(a));
+*/
     }
 }

@@ -1,4 +1,4 @@
-package SyntaxTree;
+package apron.syntaxtree;
 
 public enum NodeType{
 	none,program,perm_list,perm,filter_expr,filter_term,filter_factor,
