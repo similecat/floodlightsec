@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.openflow.protocol.OFFlowMod;
 import org.openflow.protocol.OFStatisticsRequest;
+import org.openflow.protocol.OFType;
 import org.openflow.protocol.action.OFAction;
 import org.openflow.protocol.statistics.OFStatisticsType;
 
@@ -18,7 +19,10 @@ public class ACLRequest{
     public Float size_per_switch = new Float(0.0);
     public String notification = new String("");
     public OFStatisticsType statistics = null;
-    
+    public int network = 0;
+    public int filesystem = 0;
+    public int processruntime = 0;
+
     public void APP(String s){
     	this.app = s;
     }
@@ -170,5 +174,12 @@ public class ACLRequest{
     	default:
     		return "";
     	}
+    }
+    //pkt_out
+    public boolean isPktOut(){
+    	if(this.ofFlowMod != null && ofFlowMod.getType().equals(OFType.PACKET_OUT)){
+    		return true;
+    	}
+    	return false;
     }
 };

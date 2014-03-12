@@ -54,6 +54,8 @@ public class FloodlightModuleLoader {
 	public static final String COMPILED_CONF_FILE = "floodlightdefault.properties";
 	public static final String FLOODLIGHT_MODULES_KEY = "floodlight.modules";
 	public static final String FLOODLIGHT_APPS_KEY = "floodlight.apps"; 
+	public static final String FLOODLIGHT_PERM_KEY = "floodlight.perm"; 
+	public static final String FLOODLIGHT_CONS_KEY = "floodlight.cons"; 
 
 	public FloodlightModuleLoader() {
 		floodlightModuleContext = new FloodlightModuleContext();

@@ -7,6 +7,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
@@ -23,16 +24,17 @@ import org.slf4j.LoggerFactory;
 import apron.constraint.ConstraintGenerator;
 import apron.constraint.ConstraintLexer;
 import apron.constraint.ConstraintParser;
-import apron.permissionlanguage.Evaluator;
-import apron.permissionlanguage.SyntaxGenerator;
 import apron.permissionlanguage.ApronLexer;
 import apron.permissionlanguage.ApronParser;
+import apron.permissionlanguage.Evaluator;
+import apron.permissionlanguage.SyntaxGenerator;
 import apron.syntaxtree.SyntaxTree;
 import net.floodlightcontroller.safethread.message.ApiRequest;
 import net.floodlightcontroller.safethread.message.ApiResponse;
 import net.floodlightcontroller.util.QueueReader;
 import net.floodlightcontroller.util.QueueWriter;
 import net.floodlightcontroller.core.internal.Controller;
+import net.floodlightcontroller.core.module.FloodlightModuleLoader;
 import net.floodlightcontroller.devicemanager.internal.DeviceManagerImpl;
 
 public class KernelDeputy implements Runnable {
@@ -98,7 +100,7 @@ public class KernelDeputy implements Runnable {
 		private ParseTree tree;
 		
 		//constraint language
-		public Evaluator Create_Perm_Visitor(String inputFile) throws IOException{
+		public Evaluator createPermVisitor(String inputFile) throws IOException{
 			InputStream is = new FileInputStream(inputFile);
 			ANTLRInputStream input = new ANTLRInputStream(is);
 			ApronLexer lexer = new ApronLexer(input);
@@ -109,7 +111,7 @@ public class KernelDeputy implements Runnable {
 			SyntaxGenerator syn = new SyntaxGenerator();
 	        return new Evaluator(syn.visit(tree));
 		}
-		public SyntaxTree Create_Syn_Tree(String inputFile) throws IOException{
+		public SyntaxTree createSyntaxTree(String inputFile) throws IOException{
 			InputStream is = new FileInputStream(inputFile);
 			ANTLRInputStream input = new ANTLRInputStream(is);
 			ApronLexer lexer = new ApronLexer(input);
@@ -120,7 +122,7 @@ public class KernelDeputy implements Runnable {
 	        SyntaxGenerator syn = new SyntaxGenerator();
 	        return syn.visit(tree);
 		}
-		public ConstraintGenerator Create_Con_Visitor(String inputFile) throws IOException{
+		public ConstraintGenerator createConstriantVisitor(String inputFile) throws IOException{
 			InputStream is = new FileInputStream(inputFile);
 			ANTLRInputStream input = new ANTLRInputStream(is);
 			ConstraintLexer lexer = new ConstraintLexer(input);
@@ -136,9 +138,18 @@ public class KernelDeputy implements Runnable {
 		public TaskWorker(){
 			super();
 			//loading permission language and constraint language.
+			Properties prop = new Properties();	
+	        InputStream is = this.getClass().getClassLoader().
+	                                getResourceAsStream(FloodlightModuleLoader.COMPILED_CONF_FILE);
+	        try {
+	            prop.load(is);
+	        } catch (IOException e) {
+	            logger.error("Could not load permission policy from default properties file", e);
+	            return;
+	        }
 			try {
-				perm = Create_Syn_Tree("sample.perm");
-				cons = Create_Con_Visitor("sample.con");
+				perm = createSyntaxTree(prop.getProperty(FloodlightModuleLoader.FLOODLIGHT_PERM_KEY));
+				cons = createConstriantVisitor(prop.getProperty(FloodlightModuleLoader.FLOODLIGHT_CONS_KEY));
 				int ret = cons.execute(perm);
 				if(ret > 0){
 					logger.debug("Constraint Checking Success!");
@@ -147,7 +158,7 @@ public class KernelDeputy implements Runnable {
 					logger.debug("Constraint Checking Failed!");
 				}
 				
-				eval = Create_Perm_Visitor("sample.perm");
+				eval = createPermVisitor(prop.getProperty(FloodlightModuleLoader.FLOODLIGHT_PERM_KEY));
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

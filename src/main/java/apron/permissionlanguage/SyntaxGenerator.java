@@ -87,6 +87,12 @@ public class SyntaxGenerator extends ApronBaseVisitor <SyntaxTree>{
     public SyntaxTree visitStatisticsS(ApronParser.StatisticsSContext ctx){
         return visit(ctx.statistics());
     }
+    public SyntaxTree visitPktOut(ApronParser.PktOutContext ctx){
+        return visit(ctx.pkt_out());
+    }
+    public SyntaxTree visitSystemS(ApronParser.SystemSContext ctx){
+        return visit(ctx.system());
+    }
     public SyntaxTree visitIpRange(ApronParser.IpRangeContext ctx){
         return visit(ctx.ip_range());
     }
@@ -343,6 +349,46 @@ public class SyntaxGenerator extends ApronBaseVisitor <SyntaxTree>{
     public SyntaxTree visitSwitchLevel(ApronParser.SwitchLevelContext ctx){
     	SyntaxTree ret = new SyntaxTree(NodeType.statistics);
     	ret.data(ctx.getText());
+        return ret;
+    }
+    public SyntaxTree visitPktOutAllow(ApronParser.PktOutAllowContext ctx){
+    	SyntaxTree ret = new SyntaxTree(NodeType.pktout);
+    	ret.data(1);
+        return ret;
+    }
+    public SyntaxTree visitPktOutDeny(ApronParser.PktOutDenyContext ctx){
+    	SyntaxTree ret = new SyntaxTree(NodeType.pktout);
+    	ret.data(0);
+        return ret;
+    }
+    public SyntaxTree visitNetworkAllow(ApronParser.NetworkAllowContext ctx){
+    	SyntaxTree ret = new SyntaxTree(NodeType.network);
+    	ret.data(0);
+        return ret;
+    }
+    public SyntaxTree visitNetworkDeny(ApronParser.NetworkDenyContext ctx){
+    	SyntaxTree ret = new SyntaxTree(NodeType.network);
+    	ret.data(0);
+        return ret;
+    }
+    public SyntaxTree visitFileAllow(ApronParser.FileAllowContext ctx){
+    	SyntaxTree ret = new SyntaxTree(NodeType.filesystem);
+    	ret.data(0);
+        return ret;
+    }
+    public SyntaxTree visitFileDeny(ApronParser.FileDenyContext ctx){
+    	SyntaxTree ret = new SyntaxTree(NodeType.filesystem);
+    	ret.data(0);
+        return ret;
+    }
+    public SyntaxTree visitProcessAllow(ApronParser.ProcessAllowContext ctx){
+    	SyntaxTree ret = new SyntaxTree(NodeType.processruntime);
+    	ret.data(0);
+        return ret;
+    }
+    public SyntaxTree visitProcessDeny(ApronParser.ProcessDenyContext ctx){
+    	SyntaxTree ret = new SyntaxTree(NodeType.processruntime);
+    	ret.data(0);
         return ret;
     }
 }

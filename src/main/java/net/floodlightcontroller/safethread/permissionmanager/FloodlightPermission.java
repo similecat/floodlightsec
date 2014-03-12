@@ -21,7 +21,7 @@ public class FloodlightPermission extends BasicPermission {
 		return type;
 	}
 
-	public static enum PermissionType {
+	public static enum PermissionType {/*
 		READ_TOPOLOGY,
 		READ_ALL_FLOW,
 		READ_STAT,
@@ -38,13 +38,13 @@ public class FloodlightPermission extends BasicPermission {
 		SET_FLOW_PRIORITY,
 		SET_DEVICE_CONFIG,
 		SEND_PKT_OUT,
-		SEND_BARRIER,
+		SEND_BARRIER,*/
 		NETWORK_ACCESS,
 		FILE_SYSTEM_ACCESS,
-		PROCESS_RUNTIME_ACCESS,
-		KERNEL,
-		ALLOWED,
-		FORBIDDEN
+		PROCESS_RUNTIME_ACCESS//,
+		//KERNEL,
+		//ALLOWED,
+		//FORBIDDEN
 	}
 
 }

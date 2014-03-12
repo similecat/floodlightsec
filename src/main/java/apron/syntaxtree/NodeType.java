@@ -10,6 +10,8 @@ public enum NodeType{
 	RULE_COUNT_PER_SWITCH,SIZE_PERCENTAGE_PER_SWITCH,
 	STRING,INT,FLOAT,
 	//
+	pktout,network,filesystem,processruntime,
+	//
 	binding,var_perm,app_name,perm_expr,assert_list,assert_stmt,
 	assert_expr,boolean_expr,cmp_operator,exclusive,
 	//

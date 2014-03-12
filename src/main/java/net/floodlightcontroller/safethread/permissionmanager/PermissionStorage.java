@@ -1,5 +1,7 @@
 package net.floodlightcontroller.safethread.permissionmanager;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -11,9 +13,17 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
+import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.tree.ParseTree;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import apron.acl.ACLRequest;
+import apron.permissionlanguage.ApronLexer;
+import apron.permissionlanguage.ApronParser;
+import apron.permissionlanguage.Evaluator;
+import apron.permissionlanguage.SyntaxGenerator;
 import net.floodlightcontroller.core.module.FloodlightModuleContext;
 import net.floodlightcontroller.core.module.FloodlightModuleException;
 import net.floodlightcontroller.core.module.FloodlightModuleLoader;
@@ -24,7 +34,7 @@ import net.floodlightcontroller.util.Pair;
 
 public class PermissionStorage implements IPermissionStorageService, IFloodlightModule {
 	protected static final String[] PERMISSION_STRINGS = 
-		{"READ_TOPOLOGY", 
+		{/*"READ_TOPOLOGY", 
 		"READ_ALL_FLOW", 
 		"READ_STAT", 
 		"READ_PKT_IN_PAYLOAD", 
@@ -40,7 +50,7 @@ public class PermissionStorage implements IPermissionStorageService, IFloodlight
 		"SET_FLOW_PRIORITY", 
 		"SET_DEVICE_CONFIG", 
 		"SEND_PKT_OUT", 
-		"SEND_BARRIER", 
+		"SEND_BARRIER", */
 		"NETWORK_ACCESS", 
 		"FILE_SYSTEM_ACCESS", 
 		"PROCESS_RUNTIME_ACCESS"};
@@ -82,21 +92,57 @@ public class PermissionStorage implements IPermissionStorageService, IFloodlight
 		Collection<String> moduleArray = new ArrayList<String>();
 		moduleArray.addAll(Arrays.asList(moduleString.split(",")));
 		
+		//load permission language parse
+		InputStream is1 = null;
+		try {
+			is1 = new FileInputStream(prop.getProperty(FloodlightModuleLoader.FLOODLIGHT_PERM_KEY));
+		} catch (FileNotFoundException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		ANTLRInputStream input = null;
+		try {
+			input = new ANTLRInputStream(is1);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		ApronLexer lexer = new ApronLexer(input);
+		CommonTokenStream tokens = new CommonTokenStream(lexer);
+		ApronParser parser = new ApronParser(tokens);
+		ParseTree tree = parser.program(); // parse
+
+        SyntaxGenerator syn = new SyntaxGenerator();
+        Evaluator eval = new Evaluator(syn.visit(tree));
+        
 		// Parse and store permission for each module
 		for(String appStr : moduleArray)
 		{
-			String privString = prop.getProperty(appStr+".privileges","").replaceAll("\\s", "");
-			if( !("".equals(privString)) )
+			Collection<String> privArray = new ArrayList<String>();
+			ACLRequest permissionRequest = new ACLRequest();
+			permissionRequest.APP(appStr);
+			permissionRequest.network = 1;
+			if(eval.execute(permissionRequest)){
+				privArray.add("NETWORK_ACCESS");
+			}
+			permissionRequest = new ACLRequest();
+			permissionRequest.APP(appStr);
+			permissionRequest.filesystem = 1;
+			if(eval.execute(permissionRequest)){
+				privArray.add("FILE_SYSTEM_ACCESS");
+			}
+			permissionRequest = new ACLRequest();
+			permissionRequest.APP(appStr);
+			permissionRequest.processruntime = 1;
+			if(eval.execute(permissionRequest)){
+				privArray.add("PROCESS_RUNTIME_ACCESS");
+			}				
+			
+			for(String permStr : privArray)
 			{
-				Collection<String> privArray = new ArrayList<String>();
-				privArray.addAll(Arrays.asList(privString.split(",")));
-				
-				for(String permStr : privArray)
-				{
-					IFloodlightModule app = name2ModuleMap.get(appStr);
-					PermissionType perm = name2PermMap.get(permStr);
-					addPerm(app, perm);
-				}
+				IFloodlightModule app = name2ModuleMap.get(appStr);
+				PermissionType perm = name2PermMap.get(permStr);
+				addPerm(app, perm);
 			}
 		}				
 		return true;
