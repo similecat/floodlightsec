@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.openflow.protocol.OFFlowMod;
+import org.openflow.protocol.OFMessage;
 import org.openflow.protocol.OFStatisticsRequest;
 import org.openflow.protocol.OFType;
 import org.openflow.protocol.action.OFAction;
@@ -11,6 +12,8 @@ import org.openflow.protocol.statistics.OFStatisticsType;
 
 public class ACLRequest{
     public String app = new String("");
+    public OFType ofType = null;
+    public OFMessage ofMsg = null;
     public OFFlowMod ofFlowMod = null;
     public String field = new String("");
     public List<OFAction> actions = new ArrayList<OFAction>();
@@ -26,9 +29,13 @@ public class ACLRequest{
     public void APP(String s){
     	this.app = s;
     }
+    public void MsgTranslate(OFMessage msg){
+    	this.ofType = msg.getType();
+    }
     public void MsgTranslate(OFFlowMod msg){
     	try {
 			this.ofFlowMod = msg.clone();
+			this.MsgTranslate((OFMessage) msg);
 		} catch (CloneNotSupportedException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
@@ -178,6 +185,9 @@ public class ACLRequest{
     //pkt_out
     public boolean isPktOut(){
     	if(this.ofFlowMod != null && ofFlowMod.getType().equals(OFType.PACKET_OUT)){
+    		return true;
+    	}
+    	if(this.ofType != null && this.ofType == OFType.PACKET_OUT){
     		return true;
     	}
     	return false;
