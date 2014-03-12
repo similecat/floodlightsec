@@ -1,7 +1,6 @@
 package net.floodlightcontroller.safethread.permissionmanager;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -13,17 +12,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
-import org.antlr.v4.runtime.ANTLRInputStream;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.tree.ParseTree;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import apron.acl.ACLRequest;
-import apron.permissionlanguage.ApronLexer;
-import apron.permissionlanguage.ApronParser;
-import apron.permissionlanguage.Evaluator;
-import apron.permissionlanguage.SyntaxGenerator;
 import net.floodlightcontroller.core.module.FloodlightModuleContext;
 import net.floodlightcontroller.core.module.FloodlightModuleException;
 import net.floodlightcontroller.core.module.FloodlightModuleLoader;
@@ -31,6 +19,22 @@ import net.floodlightcontroller.core.module.IFloodlightModule;
 import net.floodlightcontroller.core.module.IFloodlightService;
 import net.floodlightcontroller.safethread.permissionmanager.FloodlightPermission.PermissionType;
 import net.floodlightcontroller.util.Pair;
+
+import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.tree.ParseTree;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import apron.acl.ACLRequest;
+import apron.constraint.ConstraintGenerator;
+import apron.constraint.ConstraintLexer;
+import apron.constraint.ConstraintParser;
+import apron.permissionlanguage.ApronLexer;
+import apron.permissionlanguage.ApronParser;
+import apron.permissionlanguage.Evaluator;
+import apron.permissionlanguage.SyntaxGenerator;
+import apron.syntaxtree.SyntaxTree;
 
 public class PermissionStorage implements IPermissionStorageService, IFloodlightModule {
 	protected static final String[] PERMISSION_STRINGS = 
@@ -61,7 +65,8 @@ public class PermissionStorage implements IPermissionStorageService, IFloodlight
     protected final Map<String, IFloodlightModule> name2ModuleMap;    
     protected final Map<Thread, IFloodlightModule> thread2ModuleMap; // An app may have multiple threads
     protected final Set<Thread> appThreadSet; // Shared with AppSecurityManager
-    
+	public ConstraintGenerator cons = null;
+	
     public PermissionStorage() {
     	permSet = new HashSet<Pair<IFloodlightModule, PermissionType>>();
     	name2PermMap = new HashMap<String, PermissionType>();
@@ -73,7 +78,41 @@ public class PermissionStorage implements IPermissionStorageService, IFloodlight
     		name2PermMap.put(PERMISSION_STRINGS[i], PermissionType.values()[i]);
     	}
     }
-    
+
+	public Evaluator createPermVisitor(String inputFile) throws IOException{
+		InputStream is = new FileInputStream(inputFile);
+		ANTLRInputStream input = new ANTLRInputStream(is);
+		ApronLexer lexer = new ApronLexer(input);
+		CommonTokenStream tokens = new CommonTokenStream(lexer);
+		ApronParser parser = new ApronParser(tokens);
+		ParseTree tree = parser.program();
+
+		SyntaxGenerator syn = new SyntaxGenerator();
+        return new Evaluator(syn.visit(tree));
+	}
+	public SyntaxTree createSyntaxTree(String inputFile) throws IOException{
+		InputStream is = new FileInputStream(inputFile);
+		ANTLRInputStream input = new ANTLRInputStream(is);
+		ApronLexer lexer = new ApronLexer(input);
+		CommonTokenStream tokens = new CommonTokenStream(lexer);
+		ApronParser parser = new ApronParser(tokens);
+		ParseTree tree = parser.program(); // parse
+
+        SyntaxGenerator syn = new SyntaxGenerator();
+        return syn.visit(tree);
+	}
+	public ConstraintGenerator createConstriantVisitor(String inputFile) throws IOException{
+		InputStream is = new FileInputStream(inputFile);
+		ANTLRInputStream input = new ANTLRInputStream(is);
+		ConstraintLexer lexer = new ConstraintLexer(input);
+		CommonTokenStream tokens = new CommonTokenStream(lexer);
+		ConstraintParser parser = new ConstraintParser(tokens);
+		ParseTree tree = parser.program(); // parse
+
+		ConstraintGenerator con = new ConstraintGenerator();
+		con.visit(tree);
+        return con;
+	}
 	protected boolean parsePermConfig() {
 		// Load properties
 		Properties prop = new Properties();	
@@ -93,56 +132,60 @@ public class PermissionStorage implements IPermissionStorageService, IFloodlight
 		moduleArray.addAll(Arrays.asList(moduleString.split(",")));
 		
 		//load permission language parse
-		InputStream is1 = null;
 		try {
-			is1 = new FileInputStream(prop.getProperty(FloodlightModuleLoader.FLOODLIGHT_PERM_KEY));
-		} catch (FileNotFoundException e1) {
+			cons = createConstriantVisitor(prop.getProperty(FloodlightModuleLoader.FLOODLIGHT_CONS_KEY));
+		} catch (IOException e2) {
 			// TODO Auto-generated catch block
-			e1.printStackTrace();
+			e2.printStackTrace();
 		}
-		ANTLRInputStream input = null;
-		try {
-			input = new ANTLRInputStream(is1);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		ApronLexer lexer = new ApronLexer(input);
-		CommonTokenStream tokens = new CommonTokenStream(lexer);
-		ApronParser parser = new ApronParser(tokens);
-		ParseTree tree = parser.program(); // parse
-
-        SyntaxGenerator syn = new SyntaxGenerator();
-        Evaluator eval = new Evaluator(syn.visit(tree));
         
 		// Parse and store permission for each module
 		for(String appStr : moduleArray)
 		{
-			Collection<String> privArray = new ArrayList<String>();
-			ACLRequest permissionRequest = new ACLRequest();
-			permissionRequest.APP(appStr);
-			permissionRequest.network = 1;
-			if(eval.execute(permissionRequest)){
-				privArray.add("NETWORK_ACCESS");
-			}
-			permissionRequest = new ACLRequest();
-			permissionRequest.APP(appStr);
-			permissionRequest.filesystem = 1;
-			if(eval.execute(permissionRequest)){
-				privArray.add("FILE_SYSTEM_ACCESS");
-			}
-			permissionRequest = new ACLRequest();
-			permissionRequest.APP(appStr);
-			permissionRequest.processruntime = 1;
-			if(eval.execute(permissionRequest)){
-				privArray.add("PROCESS_RUNTIME_ACCESS");
-			}				
+			String privString = prop.getProperty(appStr+".privileges");
+			if( !("".equals(privString)) ){
+				SyntaxTree syntaxTree = null;
+				try {
+					syntaxTree = createSyntaxTree(privString);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				cons.execute(syntaxTree);
+				
+				Collection<String> privArray = new ArrayList<String>();
+				Evaluator eval = null;
+				try {
+					eval = createPermVisitor(privString);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				ACLRequest permissionRequest = new ACLRequest();
+				permissionRequest.APP(appStr);
+				permissionRequest.network = 1;
+				if(eval.execute(permissionRequest)){
+					privArray.add("NETWORK_ACCESS");
+				}
+				permissionRequest = new ACLRequest();
+				permissionRequest.APP(appStr);
+				permissionRequest.filesystem = 1;
+				if(eval.execute(permissionRequest)){
+					privArray.add("FILE_SYSTEM_ACCESS");
+				}
+				permissionRequest = new ACLRequest();
+				permissionRequest.APP(appStr);
+				permissionRequest.processruntime = 1;
+				if(eval.execute(permissionRequest)){
+					privArray.add("PROCESS_RUNTIME_ACCESS");
+				}				
 			
-			for(String permStr : privArray)
-			{
-				IFloodlightModule app = name2ModuleMap.get(appStr);
-				PermissionType perm = name2PermMap.get(permStr);
-				addPerm(app, perm);
+				for(String permStr : privArray)
+				{
+					IFloodlightModule app = name2ModuleMap.get(appStr);
+					PermissionType perm = name2PermMap.get(permStr);
+					addPerm(app, perm);
+				}
 			}
 		}				
 		return true;

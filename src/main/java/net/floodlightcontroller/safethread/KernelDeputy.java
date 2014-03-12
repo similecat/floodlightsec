@@ -5,11 +5,23 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+
+import net.floodlightcontroller.core.internal.Controller;
+import net.floodlightcontroller.core.module.FloodlightModuleLoader;
+import net.floodlightcontroller.devicemanager.internal.DeviceManagerImpl;
+import net.floodlightcontroller.safethread.message.ApiRequest;
+import net.floodlightcontroller.safethread.message.ApiResponse;
+import net.floodlightcontroller.util.QueueReader;
+import net.floodlightcontroller.util.QueueWriter;
 
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -21,21 +33,10 @@ import org.openflow.protocol.OFType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import apron.constraint.ConstraintGenerator;
-import apron.constraint.ConstraintLexer;
-import apron.constraint.ConstraintParser;
 import apron.permissionlanguage.ApronLexer;
 import apron.permissionlanguage.ApronParser;
 import apron.permissionlanguage.Evaluator;
 import apron.permissionlanguage.SyntaxGenerator;
-import apron.syntaxtree.SyntaxTree;
-import net.floodlightcontroller.safethread.message.ApiRequest;
-import net.floodlightcontroller.safethread.message.ApiResponse;
-import net.floodlightcontroller.util.QueueReader;
-import net.floodlightcontroller.util.QueueWriter;
-import net.floodlightcontroller.core.internal.Controller;
-import net.floodlightcontroller.core.module.FloodlightModuleLoader;
-import net.floodlightcontroller.devicemanager.internal.DeviceManagerImpl;
 
 public class KernelDeputy implements Runnable {
 	public static final int NTHREAD = 1;
@@ -94,11 +95,8 @@ public class KernelDeputy implements Runnable {
 	
 	class TaskWorker implements Runnable {
 		private ApiRequest task;
+		private Map<String,Evaluator> name2Evaluator = new HashMap<String,Evaluator>();
 		private Evaluator eval;
-		private SyntaxTree perm;
-		private ConstraintGenerator cons;
-		private ParseTree tree;
-		
 		//constraint language
 		public Evaluator createPermVisitor(String inputFile) throws IOException{
 			InputStream is = new FileInputStream(inputFile);
@@ -106,11 +104,12 @@ public class KernelDeputy implements Runnable {
 			ApronLexer lexer = new ApronLexer(input);
 			CommonTokenStream tokens = new CommonTokenStream(lexer);
 			ApronParser parser = new ApronParser(tokens);
-			tree = parser.program();
+			ParseTree tree = parser.program();
 
 			SyntaxGenerator syn = new SyntaxGenerator();
 	        return new Evaluator(syn.visit(tree));
 		}
+		/*
 		public SyntaxTree createSyntaxTree(String inputFile) throws IOException{
 			InputStream is = new FileInputStream(inputFile);
 			ANTLRInputStream input = new ANTLRInputStream(is);
@@ -134,10 +133,11 @@ public class KernelDeputy implements Runnable {
 			con.visit(tree);
 	        return con;
 		}
+		*/
 		
 		public TaskWorker(){
 			super();
-			//loading permission language and constraint language.
+			//loading permission language
 			Properties prop = new Properties();	
 	        InputStream is = this.getClass().getClassLoader().
 	                                getResourceAsStream(FloodlightModuleLoader.COMPILED_CONF_FILE);
@@ -147,28 +147,35 @@ public class KernelDeputy implements Runnable {
 	            logger.error("Could not load permission policy from default properties file", e);
 	            return;
 	        }
-			try {
-				perm = createSyntaxTree(prop.getProperty(FloodlightModuleLoader.FLOODLIGHT_PERM_KEY));
-				cons = createConstriantVisitor(prop.getProperty(FloodlightModuleLoader.FLOODLIGHT_CONS_KEY));
-				int ret = cons.execute(perm);
-				if(ret > 0){
-					logger.debug("Constraint Checking Success!");
+	        // Parse module list
+			String moduleString = prop.getProperty(FloodlightModuleLoader.FLOODLIGHT_APPS_KEY)
+				.replace("\\s", "");
+			Collection<String> moduleArray = new ArrayList<String>();
+			moduleArray.addAll(Arrays.asList(moduleString.split(",")));
+			// Parse and store permission for each module
+			for(String appStr : moduleArray)
+			{
+				String privString = prop.getProperty(appStr+".privileges");
+				if( !("".equals(privString)) ){
+					try {
+						eval = createPermVisitor(privString);
+						name2Evaluator.put(appStr, eval);
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 				}
-				else{
-					logger.debug("Constraint Checking Failed!");
-				}
-				
-				eval = createPermVisitor(prop.getProperty(FloodlightModuleLoader.FLOODLIGHT_PERM_KEY));
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
 			}
 		}
 		public void PermTranslate(ApiRequest r, Object obj, Method method, List<Object> args){
 			FloodlightModuleRunnable app = r.getCaller();
 			
 			//TODO: Translate every API Call into permission language mode.
-			eval.permReq.app = app.getClass().getPackage().getName();
+			eval = name2Evaluator.get(app.getClass().getName());
+			logger.info(app.getClass().getName());
+			//eval.permReq.app = app.getClass().getPackage().getName();
+			if(eval == null)
+				return;
 			//DeviceManagerImpl
 			if(obj.getClass().getName().equals("net.floodlightcontroller.devicemanager.internal.DeviceManagerImpl")){
 				if(method == null){
@@ -225,12 +232,11 @@ public class KernelDeputy implements Runnable {
 						eval.permReq.MsgTranslate(msg);
 						return;
 					}
-					/*
 					else if(Msg.getType().equals(OFType.PACKET_OUT)){
 						OFPacketOut msg = (OFPacketOut) args.get(0);
 						eval.permReq.MsgTranslate(msg);
 						return;
-					}*/
+					}
 					else if(Msg.getType().equals(OFType.FLOW_REMOVED)){
 						;
 					}
@@ -337,7 +343,7 @@ public class KernelDeputy implements Runnable {
 			
 			// TODO: Check permissions
 			PermTranslate(task, obj, method, args);
-			if(permissionCheck = eval.execute()){
+			if(eval != null && (permissionCheck = eval.execute())){
 				logger.info("Permission Checking:\t"+"True");
 			}
 			else{
