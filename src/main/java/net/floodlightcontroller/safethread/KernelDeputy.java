@@ -16,10 +16,12 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 import net.floodlightcontroller.core.internal.Controller;
+import net.floodlightcontroller.core.module.FloodlightModuleContext;
 import net.floodlightcontroller.core.module.FloodlightModuleLoader;
 import net.floodlightcontroller.devicemanager.internal.DeviceManagerImpl;
 import net.floodlightcontroller.safethread.message.ApiRequest;
 import net.floodlightcontroller.safethread.message.ApiResponse;
+import net.floodlightcontroller.topology.ITopologyService;
 import net.floodlightcontroller.util.QueueReader;
 import net.floodlightcontroller.util.QueueWriter;
 
@@ -44,12 +46,22 @@ public class KernelDeputy implements Runnable {
 	protected final QueueWriter<ApiRequest> apiRequestQueueWriter; // Shared with DelegateSanitizer
 	protected final Map<Long, Object> id2ObjectMap;  // Shared with DelegateSanitizer
 	protected DelegateSanitizer sanitizer = null;
+	private FloodlightModuleContext context = null;
+	protected ITopologyService topology = null;
 	
 	protected static Logger logger = LoggerFactory
 			.getLogger(KernelDeputy.class);
 	//public static Object monitor = new Object();	
 	//public static Queue<List<Object>> taskQueue = new ConcurrentLinkedQueue<List<Object>>();
 	
+	public FloodlightModuleContext getContext() {
+		return context;
+	}
+
+	public void setContext(FloodlightModuleContext context) {
+		this.context = context;
+	}
+
 	public KernelDeputy(Map<Long, Object> idMap) {
 		Object apiMonitor = new Object();
 		BlockingQueue<ApiRequest> apiQueue = new ArrayBlockingQueue<ApiRequest>(QueueReader.QUEUE_SIZE);
@@ -75,6 +87,9 @@ public class KernelDeputy implements Runnable {
 	public void run() {
 		//int workerCount = 0;
 		TaskWorker tw = new TaskWorker();
+		do{
+			this.topology = this.context.getServiceImpl(ITopologyService.class);
+		}while(this.topology == null);
 		while (true) {
 			// Wait for incoming API calls
 			//apiRequestQueueReader.waitsNoTimeout();
@@ -107,7 +122,7 @@ public class KernelDeputy implements Runnable {
 			ParseTree tree = parser.program();
 
 			SyntaxGenerator syn = new SyntaxGenerator();
-	        return new Evaluator(syn.visit(tree));
+	        return new Evaluator(topology,syn.visit(tree));
 		}
 		/*
 		public SyntaxTree createSyntaxTree(String inputFile) throws IOException{

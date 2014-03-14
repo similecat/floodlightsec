@@ -60,6 +60,7 @@ import net.floodlightcontroller.core.IOFSwitchListener;
 import net.floodlightcontroller.core.annotations.LogMessageDoc;
 import net.floodlightcontroller.core.annotations.LogMessageDocs;
 import net.floodlightcontroller.core.internal.OFChannelState.HandshakeState;
+import net.floodlightcontroller.core.module.FloodlightModuleContext;
 import net.floodlightcontroller.core.util.ListenerDispatcher;
 import net.floodlightcontroller.core.web.CoreWebRoutable;
 import net.floodlightcontroller.counter.ICounterStoreService;
@@ -2069,6 +2070,10 @@ public class Controller implements IFloodlightProviderService,
 		for (int i=0;i<KernelDeputy.NTHREAD;i++) {
 			new Thread(this.deputy, "KernelDeputy-" + i).start();
 		}
+    }
+    //init for KernelDeputy
+    public void init(FloodlightModuleContext context){
+    	this.deputy.setContext(context);
     }
     
     /**

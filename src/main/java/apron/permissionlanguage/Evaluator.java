@@ -1,6 +1,7 @@
 package apron.permissionlanguage;
 
 
+import net.floodlightcontroller.topology.ITopologyService;
 import apron.acl.ACLRequest;
 import apron.syntaxtree.Operation;
 import apron.syntaxtree.SyntaxTree;
@@ -8,8 +9,13 @@ import apron.syntaxtree.SyntaxTree;
 public class Evaluator{
 	public SyntaxTree syn = null;
     public ACLRequest permReq = new ACLRequest();
+    public ITopologyService topo = null;
     
     public Evaluator(SyntaxTree st){
+    	this.syn = st;
+    }
+    public Evaluator(ITopologyService topology, SyntaxTree st){
+    	this.topo = topology;
     	this.syn = st;
     }
     
@@ -102,6 +108,10 @@ public class Evaluator{
 	    	int ipReq = permReq.getIpSrc();
 	    	int maskReq = permReq.getIpSrcMask();
     		return (ip&mask) == (ipReq&maskReq);
+    	case physical_topo:
+    		return true;
+    	case virtual_topo:
+    		return true;
     	case action:
     		if(st.childs()>0){
     			return this.execute(st.child(0));

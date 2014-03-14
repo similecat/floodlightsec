@@ -69,6 +69,7 @@ public class FloodlightProvider implements IFloodlightModule {
        controller.setThreadPoolService(
            context.getServiceImpl(IThreadPoolService.class));
        controller.init(context.getConfigParams(this));
+       controller.init(context);
     }
 
     @Override
