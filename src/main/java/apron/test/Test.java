@@ -36,37 +36,10 @@ public class Test{
 	}
     public static void main(String[] args) throws Exception {
         System.out.println("Start!");
-        /*
-        String inputFile = null;
-        if (args.length > 0) inputFile = args[0];
-        InputStream is = System.in;
-        if ( inputFile!=null ) is = new FileInputStream(inputFile);
-        ANTLRInputStream input = new ANTLRInputStream(is);
-        ApronLexer lexer = new ApronLexer(input);
-        CommonTokenStream tokens = new CommonTokenStream(lexer);
-        ApronParser parser = new ApronParser(tokens);
-        ParseTree tree = parser.program(); // parse
-        */
-        Evaluator eval = CreateEvaluator("sample.perm");
-        eval.permReq.app = "pkt_in_event";
-        eval.permReq.notification = "EVENT_INTERCEPTION";
-        System.out.println(eval.execute()?"True":"False");
+        System.out.println(new FlowPreTestor().execute()?"True":"False");
         System.out.println("Done!");
         
-/*
-        EvaluateVisitor eval = new EvaluateVisitor();
-        eval.perm_req.app = "pkt_in_event";
-        eval.perm_req.notification = "EVENT_INTERCEPTION";
-        //eval.visit(tree);
-        Boolean ret = false;
-        ret = eval.visit(tree);
-        if(ret == true){
-            System.out.println("True");
-        }
-        else{
-            System.out.println("False");
-        }
-*/
+
 /*
         SyntaxGenerator syn = new SyntaxGenerator();
         SyntaxTree syntree = syn.visit(tree);

@@ -124,7 +124,12 @@ public class SyntaxGenerator extends ApronBaseVisitor <SyntaxTree>{
     }
     public SyntaxTree visitValIp(ApronParser.ValIpContext ctx){
     	SyntaxTree ret = new SyntaxTree(NodeType.flow_predicate);
-        ret.data(Integer.valueOf(ctx.IP_FORMAT().getText()));
+        ret.data(ctx.IP_FORMAT().getText());
+        return ret;
+    }
+    public SyntaxTree visitField(ApronParser.FieldContext ctx){
+    	SyntaxTree ret = new SyntaxTree(NodeType.field);
+        ret.data(ctx.getText());
         return ret;
     }
     public SyntaxTree visitPhysicalTopo(ApronParser.PhysicalTopoContext ctx){

@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import net.floodlightcontroller.topology.ITopologyService;
 import net.floodlightcontroller.topology.NodePortTuple;
 import net.floodlightcontroller.topology.TopologyManager;
 import apron.acl.ACLRequest;
@@ -20,8 +21,8 @@ public class Evaluator{
     public Evaluator(SyntaxTree st){
     	this.syn = st;
     }
-    public Evaluator(TopologyManager topology, SyntaxTree st){
-    	this.topo = topology;
+    public Evaluator(ITopologyService topology, SyntaxTree st){
+    	this.topo = (TopologyManager) topology;
     	this.syn = st;
     }
     
@@ -63,10 +64,10 @@ public class Evaluator{
     			return true;
     		}
     	case perm_name:
-    		if(st._string.equals(permReq.app)){
-    			return true;
-    		}
-    		return false;
+    		//if(st._string.equals(permReq.app)){
+    		//	return true;
+    		//}
+    		return true;
     	case filter_expr:
     		//operation and
     		for(int i = 0; i < st.childs(); ++i){
@@ -99,7 +100,7 @@ public class Evaluator{
     		switch(st._int){
     		case 1:
         		ip = stringToIp(st.child(1)._string);
-        		mask = ~(-1);
+        		mask = -1;
     	    	ipReq = permReq.getFieldIP(field);
     	    	maskReq = permReq.getFieldMask(field);
         		return (ip&mask) == (ipReq&maskReq);
