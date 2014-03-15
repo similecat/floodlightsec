@@ -1,0 +1,430 @@
+  
+Apron
+
+a)Introduction
+b)Simple Guide
+c)How to build an App
+A)Detailed Permission language
+B)Detailed Constraint language
+************************************************
+
+a)Introduction
+************************************************
+
+Apron is an extended OpenFlow controller based on Floodlight. The main idea for Apron is to build
+a secure controller. Our work was mainly on:
+1)Isolation between user app and controller basis.
+2)Permission language for easier configuration.
+3)Constraint language for static limitations between different kind of permission;
+
+Floodlight is a Java based OpenFlow controller originally written by David Erickson at Stanford
+University. It is available under the Apache 2.0 license.
+
+For more documentation, forums and issue tracking about Floodlight  visit:
+
+      http://www.openflowhub.org/display/Floodlight/Floodlight+Home
+************************************************
+
+b)Simple Guide
+************************************************
+
+We first isolate user app with controller bisis by using sandbox and doing permission checking
+centralized.
+Our language parser in use is ANTLR v4.0. Before programming, we should configure ANTLR. External
+lib need for execution was already added to the project. For more details about ANTLR visit:
+	http://www.antlr.org/
+You can simply download the code by:
+	git clone https://github.com/XXX/Apron
+Then, import project Apron into Eclipse. If you don't have Eclipse, You can download on 
+	http://www.eclipse.org/downloads/
+Or you can running project by using
+	#ant
+	#java -jar target/floodlight.tar
+See more detailed information on Floodlight's installation:
+	https://github.com/floodlight/floodlight
+	
+************************************************
+
+c)How to build an App
+************************************************
+
+The method to create a new app is same to Floodlight, you can get more from:
+	https://github.com/floodlight/floodlight
+After a new app created, just take app "Sample" for example, app should be included by floodlight.apps.
+First open src/main/resources/floodlightdefault.properties,
+then find floodllight.apps, add the new app. For Example:
+Before adding:
+	floodlight.apps = net.floodlightcontroller.hub.Hub
+After adding:	
+	floodlight.apps = net.floodlightcontroller.hub.Hub,
+	net.floodlightcontroller.sample.Sample
+Until now, we just add a new app to Apron. Before start, we should build an permission configuration 
+file for the new app. Create a new file named Sample.perm, typing and save:
+	PERM flow_level
+	LIMITING FLOW_LEVEL OR PORT_LEVEL OR SWITCH_LEVEL
+	PERM pkt_in_event
+	LIMITING NOT EVENT_INTERCEPTION
+Then we should bind the new permission file to the new app, src/main/resources/floodlightdefault.properties
+and add a new line:
+	net.floodlightcontroller.sample.Sample.privileges = sample.perm
+
+After all, you can build and run the Apron with your new App "Sample".
+
+************************************************
+A)Detailed Permission language
+************************************************
+
+grammar Apron;
+import Token;
+program:
+       perm_list                            #Final
+       ;
+perm_list:
+         perm                               #PermListS
+         |perm perm_list                    #PermListM
+         ;
+perm:
+    PERM perm_name                          #PermS
+    |PERM perm_name LIMITING filter_expr    #PermM
+    ;
+filter_expr:
+    filter_term                             #FilterExprTerm
+    |filter_expr AND filter_term            #FilterExprAndTerm
+    ;
+filter_term:
+    filter_factor                           #FilterTermFactor
+    |filter_term OR filter_factor           #FilterTermOrFactor
+    ;
+filter_factor:
+    filter_not_factor                       #FilterFactorNotFactor
+    |NOT filter_factor                      #FilterFactorNot
+    ;
+filter_not_factor:
+    '(' filter_expr ')'                     #FilterExpr
+    |flow_predicate                         #FlowPredicate
+    |topo                                   #Topology
+    |ACTION action                          #Actions
+    |ownership                              #OwnershipS
+    |max_priority                           #MaxPriority
+    |flow_table                             #FlowTable
+    |notification                           #NotificationS
+    |statistics                             #StatisticsS
+    |pkt_out                                #PktOut
+    |system                                 #SystemS
+    ;    
+flow_predicate:
+    field val                               #FieldVal
+    |field val MASK val                     #FieldMask
+    |WILDCARD field val                     #Wildcard
+    ;
+field:
+     TCP_SRC
+     |TCP_DST
+     |VLAN_ID
+     |IP_SRC
+     |IP_DST
+     ;
+val:
+    INT                                     #ValInt
+    |IP_FORMAT                              #ValIp
+    ;
+topo:
+    physical_topo                           #PhysicalTopo
+    |virtual_topo                           #VirtualTopo
+    ;
+physical_topo:
+             SWITCH switch_set AND LINK link_set
+             ;
+switch_set:
+          ALL_SWITCHES                      #AllSwitches
+          |BORDER_SWITCHES                  #BorderSwitches
+          |'{' sw_idx_list '}'              #SwIdxList
+          ;
+sw_idx_list:
+           sw_idx                           #SwIdxListS
+           |sw_idx ',' sw_idx_list          #SwIdxListM
+           ;
+sw_idx:
+      INT
+      ;
+link_set:
+        ALL_DIRECT_LINKS                    #AllDriectLinks
+        |ALL_PATHS_AS_LINKS                 #AllPathsAsLinks
+        |link_list                          #LinkList
+        ;
+link_list:
+         link                               #LinkListS
+         |link ',' link_list                #LinkListM
+         ;
+link:
+    link_idx ':' link_idx ';'               #LinkS
+    |'(' path ')'                           #LinkM
+    ;
+path:
+    link_idx                                #PathS
+    |link_idx ':' path                      #PathM
+    ;
+link_idx:
+    sw_idx ',' INT
+    ;
+virtual_topo:
+            VIRTUAL SWITCH switch_mapping AND LINK link_set
+            ;
+switch_mapping:
+              SINGLE_BIG_SWITCH             #SingleBigSwitch
+              |'{' virtual_switch_set '}'   #VirtualSwitchSet
+              ;
+virtual_switch_set:
+          switch_set AS sw_idx              #VirtualSwitchSetS
+          |switch_set AS sw_idx ',' virtual_switch_set  #VirtualSwitchSetM
+          ;
+action:
+      DROP                                  #Drop
+      |FORWARD                              #Forward
+      |MODIFY                               #Modify
+      |MODIFY FIELD field_list              #ModifyField
+      ;
+field_list:
+          field                             #FieldS
+          |field ',' field_list             #FieldM
+          ;    
+ownership:
+         OWN_FLOWS                          #OwnFlows
+         |OTHERS_FLOWS                      #OthersFlows
+         |ALL_FLOWS                         #AllFlows
+         ;
+max_priority:
+            MAX_PRIORITY INT                #PriorityMax
+            |MIN_PRIORITY INT               #PriorityMin
+            ;
+flow_table:
+    RULE_COUNT_PER_SWITCH INT               #FlowTableA
+    |SIZE_PERCENTAGE_PER_SWITCH FLOAT       #FlowTableB
+    ;
+notification:
+            EVENT_INTERCEPTION              #EventInterception
+            |MODIFY_EVENT_ORDER             #ModifyEventOrder
+            ;
+statistics:
+          FLOW_LEVEL                        #FlowLevel
+          |PORT_LEVEL                       #PortLevel
+          |SWITCH_LEVEL                     #SwitchLevel
+          ;
+pkt_out:
+        FROM_PKT_IN                         #PktOutDeny
+        |ARBITRARY                          #PktOutAllow
+        ;
+perm_name:
+         STRING
+         ;
+system:
+        AllowNetworkAccess                  #NetworkAllow
+        |DenyNetworkAccess                  #NetworkDeny
+        |AllowFileSystem                    #FileAllow
+        |DenyFileSystem                     #FileDeny
+        |AllowProcessRuntime                #ProcessAllow
+        |DenyProcessRuntime                 #ProcessDeny
+        ;
+        
+************************************************
+B)Detailed Constraint language 
+************************************************
+grammar Constraint;
+import Token;
+program:
+        stat*
+        ;
+stat:
+        binding                             #Bind
+        |assert_list                        #AssertList
+        ;
+binding:
+        LET var_perm '=' '{' perm_list '}'  #BindList
+        |LET var_perm '=' APP app_name      #BindApp
+        |LET var_perm '=' perm_expr         #BindExpr
+        ;
+var_perm:
+        STRING
+        ;
+app_name:
+        STRING
+        ;
+perm_expr:
+        var_perm                            #VarPerm
+        |perm_expr UNION var_perm           #PermExprUnion
+        ;
+assert_list:
+        assert_stmt                         #AssertStmtS
+        |assert_stmt assert_list            #AssertStmtM
+        ;
+assert_stmt:
+        ASSERT assert_expr                  #AssertExpr
+        |ASSERT exclusive                   #AssertExclusive
+        ;
+assert_expr:
+        NOT assert_expr                     #AssertNot
+        |assert_expr OR boolean_expr        #AssertOr
+        |assert_expr AND boolean_expr       #AssertAnd
+        |boolean_expr                       #BooleanExpr
+        ;
+boolean_expr:
+        perm_expr cmp_operator perm_expr
+        ;
+cmp_operator:
+        '<'
+        |'>'
+        |'='
+        |'<='
+        |'>='
+        ;
+exclusive:
+        EITHER perm_expr OR perm_expr
+        ;
+
+perm_list:
+         perm                               #PermListS
+         |perm perm_list                    #PermListM
+         ;
+perm:
+    PERM perm_name                          #PermS
+    |PERM perm_name LIMITING filter_expr    #PermM
+    ;
+filter_expr:
+    filter_term                             #FilterExprTerm
+    |filter_expr AND filter_term            #FilterExprAndTerm
+    ;
+filter_term:
+    filter_factor                           #FilterTermFactor
+    |filter_term OR filter_factor           #FilterTermOrFactor
+    ;
+filter_factor:
+    filter_not_factor                       #FilterFactorNotFactor
+    |NOT filter_factor                      #FilterFactorNot
+    ;
+filter_not_factor:
+    '(' filter_expr ')'                     #FilterExpr
+    |flow_predicate                         #FlowPredicate
+    |topo                                   #Topology
+    |ACTION action                          #Actions
+    |ownership                              #OwnershipS
+    |max_priority                           #MaxPriority
+    |flow_table                             #FlowTable
+    |notification                           #NotificationS
+    |statistics                             #StatisticsS
+    |pkt_out                                #PktOut
+    |system                                 #SystemS
+    ;    
+flow_predicate:
+    field val                               #FieldVal
+    |field val MASK val                     #FieldMask
+    |WILDCARD field val                     #Wildcard
+    ;
+field:
+     TCP_SRC
+     |TCP_DST
+     |VLAN_ID
+     |IP_SRC
+     |IP_DST
+     ;
+val:
+    INT                                     #ValInt
+    |IP_FORMAT                              #ValIp
+    ;
+topo:
+    physical_topo                           #PhysicalTopo
+    |virtual_topo                           #VirtualTopo
+    ;
+physical_topo:
+             SWITCH switch_set AND LINK link_set
+             ;
+switch_set:
+          ALL_SWITCHES                      #AllSwitches
+          |BORDER_SWITCHES                  #BorderSwitches
+          |'{' sw_idx_list '}'              #SwIdxList
+          ;
+sw_idx_list:
+           sw_idx                           #SwIdxListS
+           |sw_idx ',' sw_idx_list          #SwIdxListM
+           ;
+sw_idx:
+      INT
+      ;
+link_set:
+        ALL_DIRECT_LINKS                    #AllDriectLinks
+        |ALL_PATHS_AS_LINKS                 #AllPathsAsLinks
+        |link_list                          #LinkList
+        ;
+link_list:
+         link                               #LinkListS
+         |link ',' link_list                #LinkListM
+         ;
+link:
+    link_idx ':' link_idx ';'               #LinkS
+    |'(' path ')'                           #LinkM
+    ;
+path:
+    link_idx                                #PathS
+    |link_idx ':' path                      #PathM
+    ;
+link_idx:
+    sw_idx ',' INT
+    ;
+virtual_topo:
+            VIRTUAL SWITCH switch_mapping AND LINK link_set
+            ;
+switch_mapping:
+              SINGLE_BIG_SWITCH             #SingleBigSwitch
+              |'{' virtual_switch_set '}'   #VirtualSwitchSet
+              ;
+virtual_switch_set:
+          switch_set AS sw_idx              #VirtualSwitchSetS
+          |switch_set AS sw_idx ',' virtual_switch_set  #VirtualSwitchSetM
+          ;
+action:
+      DROP                                  #Drop
+      |FORWARD                              #Forward
+      |MODIFY                               #Modify
+      |MODIFY FIELD field_list              #ModifyField
+      ;
+field_list:
+          field                             #FieldS
+          |field ',' field_list             #FieldM
+          ;    
+ownership:
+         OWN_FLOWS                          #OwnFlows
+         |OTHERS_FLOWS                      #OthersFlows
+         |ALL_FLOWS                         #AllFlows
+         ;
+max_priority:
+            MAX_PRIORITY INT                #PriorityMax
+            |MIN_PRIORITY INT               #PriorityMin
+            ;
+flow_table:
+    RULE_COUNT_PER_SWITCH INT               #FlowTableA
+    |SIZE_PERCENTAGE_PER_SWITCH FLOAT       #FlowTableB
+    ;
+notification:
+            EVENT_INTERCEPTION              #EventInterception
+            |MODIFY_EVENT_ORDER             #ModifyEventOrder
+            ;
+statistics:
+          FLOW_LEVEL                        #FlowLevel
+          |PORT_LEVEL                       #PortLevel
+          |SWITCH_LEVEL                     #SwitchLevel
+          ;
+pkt_out:
+        FROM_PKT_IN                         #PktOutDeny
+        |ARBITRARY                          #PktOutAllow
+        ;
+perm_name:
+         STRING
+         ;
+system:
+        AllowNetworkAccess                  #NetworkAllow
+        |DenyNetworkAccess                  #NetworkDeny
+        |AllowFileSystem                    #FileAllow
+        |DenyFileSystem                     #FileDeny
+        |AllowProcessRuntime                #ProcessAllow
+        |DenyProcessRuntime                 #ProcessDeny
+        ;
+
