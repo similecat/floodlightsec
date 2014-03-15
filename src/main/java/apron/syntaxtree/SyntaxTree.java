@@ -1,5 +1,7 @@
 package apron.syntaxtree;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.Vector;
 public class SyntaxTree{
 	public NodeType Type = NodeType.none;
@@ -9,6 +11,8 @@ public class SyntaxTree{
 	public String _string = new String("");
 	public Integer _int = new Integer(0);
 	public Float _float = new Float(0);
+	public Long _long = new Long(0);
+	public Set<Long> _set = new HashSet<Long>();
 	
 	public SyntaxTree(){
 		;
@@ -32,6 +36,12 @@ public class SyntaxTree{
 	}
 	public void data(Float e){
 		_float = e;
+	}
+	public void data(Long e){
+		_long = e;
+	}
+	public void put(long e){
+		_set.add(e);
 	}
 	public void add(String e){
 		SyntaxTree t = new SyntaxTree(NodeType.STRING);
@@ -129,6 +139,18 @@ public class SyntaxTree{
 			}
 			else if(t.Type.equals(NodeType.value_list)&&
 					tmp.Type.equals(NodeType.value_list)){
+				ret.add(tmp);
+			}
+			else if(t.Type.equals(NodeType.sw_idx_list)&&
+					tmp.Type.equals(NodeType.sw_idx_list)){
+				ret.add(tmp);
+			}
+			else if(t.Type.equals(NodeType.path)&&
+					tmp.Type.equals(NodeType.path)){
+				ret.add(tmp);
+			}
+			else if(t.Type.equals(NodeType.link_list)&&
+					tmp.Type.equals(NodeType.link_list)){
 				ret.add(tmp);
 			}
 			else if(t.Type.equals(NodeType.assert_list)&&

@@ -13,6 +13,9 @@ public class ConstraintBaseListener implements ConstraintListener {
 	@Override public void enterFieldS(ConstraintParser.FieldSContext ctx) { }
 	@Override public void exitFieldS(ConstraintParser.FieldSContext ctx) { }
 
+	@Override public void enterPriorityMin(ConstraintParser.PriorityMinContext ctx) { }
+	@Override public void exitPriorityMin(ConstraintParser.PriorityMinContext ctx) { }
+
 	@Override public void enterFieldM(ConstraintParser.FieldMContext ctx) { }
 	@Override public void exitFieldM(ConstraintParser.FieldMContext ctx) { }
 
@@ -97,11 +100,11 @@ public class ConstraintBaseListener implements ConstraintListener {
 	@Override public void enterDrop(ConstraintParser.DropContext ctx) { }
 	@Override public void exitDrop(ConstraintParser.DropContext ctx) { }
 
+	@Override public void enterValIp(ConstraintParser.ValIpContext ctx) { }
+	@Override public void exitValIp(ConstraintParser.ValIpContext ctx) { }
+
 	@Override public void enterSingleBigSwitch(ConstraintParser.SingleBigSwitchContext ctx) { }
 	@Override public void exitSingleBigSwitch(ConstraintParser.SingleBigSwitchContext ctx) { }
-
-	@Override public void enterValueListS(ConstraintParser.ValueListSContext ctx) { }
-	@Override public void exitValueListS(ConstraintParser.ValueListSContext ctx) { }
 
 	@Override public void enterAssertNot(ConstraintParser.AssertNotContext ctx) { }
 	@Override public void exitAssertNot(ConstraintParser.AssertNotContext ctx) { }
@@ -124,11 +127,11 @@ public class ConstraintBaseListener implements ConstraintListener {
 	@Override public void enterLink_idx(ConstraintParser.Link_idxContext ctx) { }
 	@Override public void exitLink_idx(ConstraintParser.Link_idxContext ctx) { }
 
-	@Override public void enterValueListM(ConstraintParser.ValueListMContext ctx) { }
-	@Override public void exitValueListM(ConstraintParser.ValueListMContext ctx) { }
-
 	@Override public void enterBindApp(ConstraintParser.BindAppContext ctx) { }
 	@Override public void exitBindApp(ConstraintParser.BindAppContext ctx) { }
+
+	@Override public void enterValInt(ConstraintParser.ValIntContext ctx) { }
+	@Override public void exitValInt(ConstraintParser.ValIntContext ctx) { }
 
 	@Override public void enterAssertOr(ConstraintParser.AssertOrContext ctx) { }
 	@Override public void exitAssertOr(ConstraintParser.AssertOrContext ctx) { }
@@ -157,14 +160,8 @@ public class ConstraintBaseListener implements ConstraintListener {
 	@Override public void enterVirtualSwitchSetS(ConstraintParser.VirtualSwitchSetSContext ctx) { }
 	@Override public void exitVirtualSwitchSetS(ConstraintParser.VirtualSwitchSetSContext ctx) { }
 
-	@Override public void enterMax_priority(ConstraintParser.Max_priorityContext ctx) { }
-	@Override public void exitMax_priority(ConstraintParser.Max_priorityContext ctx) { }
-
-	@Override public void enterValueRangeS(ConstraintParser.ValueRangeSContext ctx) { }
-	@Override public void exitValueRangeS(ConstraintParser.ValueRangeSContext ctx) { }
-
-	@Override public void enterValueRangeM(ConstraintParser.ValueRangeMContext ctx) { }
-	@Override public void exitValueRangeM(ConstraintParser.ValueRangeMContext ctx) { }
+	@Override public void enterWildcard(ConstraintParser.WildcardContext ctx) { }
+	@Override public void exitWildcard(ConstraintParser.WildcardContext ctx) { }
 
 	@Override public void enterBindExpr(ConstraintParser.BindExprContext ctx) { }
 	@Override public void exitBindExpr(ConstraintParser.BindExprContext ctx) { }
@@ -187,11 +184,11 @@ public class ConstraintBaseListener implements ConstraintListener {
 	@Override public void enterVirtual_topo(ConstraintParser.Virtual_topoContext ctx) { }
 	@Override public void exitVirtual_topo(ConstraintParser.Virtual_topoContext ctx) { }
 
+	@Override public void enterFieldMask(ConstraintParser.FieldMaskContext ctx) { }
+	@Override public void exitFieldMask(ConstraintParser.FieldMaskContext ctx) { }
+
 	@Override public void enterFlowTableB(ConstraintParser.FlowTableBContext ctx) { }
 	@Override public void exitFlowTableB(ConstraintParser.FlowTableBContext ctx) { }
-
-	@Override public void enterFieldList(ConstraintParser.FieldListContext ctx) { }
-	@Override public void exitFieldList(ConstraintParser.FieldListContext ctx) { }
 
 	@Override public void enterFlowTableA(ConstraintParser.FlowTableAContext ctx) { }
 	@Override public void exitFlowTableA(ConstraintParser.FlowTableAContext ctx) { }
@@ -217,6 +214,9 @@ public class ConstraintBaseListener implements ConstraintListener {
 	@Override public void enterSwIdxListS(ConstraintParser.SwIdxListSContext ctx) { }
 	@Override public void exitSwIdxListS(ConstraintParser.SwIdxListSContext ctx) { }
 
+	@Override public void enterFieldVal(ConstraintParser.FieldValContext ctx) { }
+	@Override public void exitFieldVal(ConstraintParser.FieldValContext ctx) { }
+
 	@Override public void enterPktOut(ConstraintParser.PktOutContext ctx) { }
 	@Override public void exitPktOut(ConstraintParser.PktOutContext ctx) { }
 
@@ -225,9 +225,6 @@ public class ConstraintBaseListener implements ConstraintListener {
 
 	@Override public void enterSwIdxListM(ConstraintParser.SwIdxListMContext ctx) { }
 	@Override public void exitSwIdxListM(ConstraintParser.SwIdxListMContext ctx) { }
-
-	@Override public void enterIp_range(ConstraintParser.Ip_rangeContext ctx) { }
-	@Override public void exitIp_range(ConstraintParser.Ip_rangeContext ctx) { }
 
 	@Override public void enterTopology(ConstraintParser.TopologyContext ctx) { }
 	@Override public void exitTopology(ConstraintParser.TopologyContext ctx) { }
@@ -280,14 +277,14 @@ public class ConstraintBaseListener implements ConstraintListener {
 	@Override public void enterAllDriectLinks(ConstraintParser.AllDriectLinksContext ctx) { }
 	@Override public void exitAllDriectLinks(ConstraintParser.AllDriectLinksContext ctx) { }
 
+	@Override public void enterPriorityMax(ConstraintParser.PriorityMaxContext ctx) { }
+	@Override public void exitPriorityMax(ConstraintParser.PriorityMaxContext ctx) { }
+
 	@Override public void enterPerm_name(ConstraintParser.Perm_nameContext ctx) { }
 	@Override public void exitPerm_name(ConstraintParser.Perm_nameContext ctx) { }
 
 	@Override public void enterSw_idx(ConstraintParser.Sw_idxContext ctx) { }
 	@Override public void exitSw_idx(ConstraintParser.Sw_idxContext ctx) { }
-
-	@Override public void enterIp_format(ConstraintParser.Ip_formatContext ctx) { }
-	@Override public void exitIp_format(ConstraintParser.Ip_formatContext ctx) { }
 
 	@Override public void enterModifyField(ConstraintParser.ModifyFieldContext ctx) { }
 	@Override public void exitModifyField(ConstraintParser.ModifyFieldContext ctx) { }
@@ -306,9 +303,6 @@ public class ConstraintBaseListener implements ConstraintListener {
 
 	@Override public void enterFlowPredicate(ConstraintParser.FlowPredicateContext ctx) { }
 	@Override public void exitFlowPredicate(ConstraintParser.FlowPredicateContext ctx) { }
-
-	@Override public void enterIpRange(ConstraintParser.IpRangeContext ctx) { }
-	@Override public void exitIpRange(ConstraintParser.IpRangeContext ctx) { }
 
 	@Override public void enterEveryRule(ParserRuleContext ctx) { }
 	@Override public void exitEveryRule(ParserRuleContext ctx) { }

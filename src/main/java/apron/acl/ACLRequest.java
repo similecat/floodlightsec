@@ -3,6 +3,8 @@ package apron.acl;
 import java.util.ArrayList;
 import java.util.List;
 
+import net.floodlightcontroller.core.IOFSwitch;
+
 import org.openflow.protocol.OFFlowMod;
 import org.openflow.protocol.OFMessage;
 import org.openflow.protocol.OFStatisticsRequest;
@@ -25,12 +27,21 @@ public class ACLRequest{
     public int network = 0;
     public int filesystem = 0;
     public int processruntime = 0;
+    public long sw = 0;
 
     public void APP(String s){
     	this.app = s;
     }
+    public void MsgTranslate(IOFSwitch sw, OFMessage msg){
+    	this.sw = sw.getId();
+    	this.MsgTranslate(msg);
+    }
     public void MsgTranslate(OFMessage msg){
     	this.ofType = msg.getType();
+    }
+    public void MsgTranslate(IOFSwitch sw, OFFlowMod msg){
+    	this.sw = sw.getId();
+    	this.MsgTranslate(msg);
     }
     public void MsgTranslate(OFFlowMod msg){
     	try {
@@ -54,7 +65,25 @@ public class ACLRequest{
     	this.statistics = msg.getStatisticType();
     }
     //flow_predicate
-    public int getField(String field){
+    public int getFieldMask(String field){
+    	if(field.equals("TCP_SRC")){
+    		return this.getIpSrcMask();
+    	}
+    	else if(field.equals("TCP_DST")){
+    		return this.getIpDstMask();
+    	}
+    	else if(field.equals("VLAN_ID")){
+    		return this.getVlanId();
+    	}
+    	else if(field.equals("IP_SRC")){
+    		return this.getIpSrcMask();
+    	}
+    	else if(field.equals("IP_DST")){
+    		return this.getIpDstMask();
+    	}
+    	return -1;
+    }
+    public int getFieldIP(String field){
     	if(field.equals("TCP_SRC")){
     		return this.getTcpSrc();
     	}
@@ -107,6 +136,12 @@ public class ACLRequest{
     		return -1;
     	}
     	return ofFlowMod.getMatch().getNetworkDestination();
+    }
+    public int getIpDstMask(){
+    	if(this.ofFlowMod == null){
+    		return -1;
+    	}
+    	return ~((1<<ofFlowMod.getMatch().getNetworkDestinationMaskLen())-1);
     }
     //TODO:Topo
     

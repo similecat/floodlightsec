@@ -1,7 +1,13 @@
 package apron.permissionlanguage;
 
 
-import net.floodlightcontroller.topology.ITopologyService;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+
+import net.floodlightcontroller.topology.NodePortTuple;
+import net.floodlightcontroller.topology.TopologyManager;
 import apron.acl.ACLRequest;
 import apron.syntaxtree.Operation;
 import apron.syntaxtree.SyntaxTree;
@@ -9,12 +15,12 @@ import apron.syntaxtree.SyntaxTree;
 public class Evaluator{
 	public SyntaxTree syn = null;
     public ACLRequest permReq = new ACLRequest();
-    public ITopologyService topo = null;
+    public TopologyManager topo = null;
     
     public Evaluator(SyntaxTree st){
     	this.syn = st;
     }
-    public Evaluator(ITopologyService topology, SyntaxTree st){
+    public Evaluator(TopologyManager topology, SyntaxTree st){
     	this.topo = topology;
     	this.syn = st;
     }
@@ -89,26 +95,82 @@ public class Evaluator{
     	case flow_predicate:
     		//TODO
     		String field = st.child(0)._string;
-    		for(int i = 0; i < st.child(1).childs(); ++i){
-    			SyntaxTree valueRange = st.child(1).child(i);
-    			if(valueRange.childs() == 1&&
-    					valueRange.child(0)._int == permReq.getField(field)){
-    				return true;
+    		int ip,mask,ipReq,maskReq;
+    		switch(st._int){
+    		case 1:
+        		ip = stringToIp(st.child(1)._string);
+        		mask = ~(-1);
+    	    	ipReq = permReq.getFieldIP(field);
+    	    	maskReq = permReq.getFieldMask(field);
+        		return (ip&mask) == (ipReq&maskReq);
+    		case 2:
+        		ip = stringToIp(st.child(1)._string);
+        		mask = stringToIp(st.child(2)._string);
+    	    	ipReq = permReq.getFieldIP(field);
+    	    	maskReq = permReq.getFieldMask(field);
+        		return (ip&mask) == (ipReq&maskReq);
+    		case 3:
+        		mask = stringToIp(st.child(1)._string);
+    	    	maskReq = permReq.getFieldMask(field);
+        		return (mask) == (maskReq);
+        	default:
+        		return true;
+    		}
+    	case physical_topo:
+    		Set <Long> sws = new HashSet<Long>();
+    		if("ALL_SWITCHES".equals(st.child(0)._string)){
+    			sws = topo.getSwitchPorts().keySet();
+    		}
+    		else if("BORDER_SWITCHES".equals(st.child(0)._string)){
+    			Map<Long, Set<Short>> switchPorts = topo.getSwitchPorts();
+    			Set<NodePortTuple> switchTuple = new HashSet<NodePortTuple>();
+    			for(Iterator<Long> it = switchPorts.keySet().iterator(); it.hasNext();){
+    				Long sw = (Long) it.next();
+    				for(Iterator<Short> its = switchPorts.get(sw).iterator(); its.hasNext();){
+    					switchTuple.add(new NodePortTuple(sw,(Short)its.next()));
+    				}
     			}
-    			else if(valueRange.child(0)._int <= permReq.getField(field)&&
-    					valueRange.child(1)._int >= permReq.getField(field)){
-        			return true;
+    			for(Iterator<NodePortTuple> it = topo.getSwitchPortLinks().keySet().iterator(); it.hasNext();){
+    				switchTuple.remove(it.next());
+    			}
+    			for(Iterator<NodePortTuple> it = switchTuple.iterator(); it.hasNext();){
+    				sws.add(it.next().getNodeId());
     			}
     		}
-    		return false;
-
-    	case ip_range:
-    		int ip = stringToIp(st.child(0)._string);
-    		int mask = stringToIp(st.child(1)._string);
-	    	int ipReq = permReq.getIpSrc();
-	    	int maskReq = permReq.getIpSrcMask();
-    		return (ip&mask) == (ipReq&maskReq);
-    	case physical_topo:
+    		else if("".equals(st.child(0)._string)){
+    			SyntaxTree ch = st.child(0).child(0);
+    			switch(ch.Type){
+    			case sw_idx:
+    				sws.add(ch._long);
+    				break;
+    			case sw_idx_list:
+    				for(int i = 0; i < ch.childs(); ++i){
+    					sws.add(ch.child(i)._long);
+    				}
+    				break;
+				default:
+					break;
+    			}
+    		}
+    		long sw = permReq.sw;
+    		short port = permReq.ofFlowMod.getMatch().getInputPort();
+    		if(!sws.contains(sw)){
+    			return false;
+    		}
+    		if(!topo.getSwitchPorts().get(sw).contains(port)){
+    			return false;
+    		}
+/*
+    		if("ALL_DIRECT_LINKS".equals(st.child(1)._string)){
+    			return true;
+    		}
+    		else if("ALL_PATHS_AS_LINKS".equals(st.child(1)._string)){
+    			return true;
+    		}
+    		else if("".equals(st.child(0)._string)){
+    			;
+    		}
+*/    		
     		return true;
     	case virtual_topo:
     		return true;
@@ -166,6 +228,8 @@ public class Evaluator{
     		return permReq.ownership.equals(st._string);
     	case max_priority:
     		return permReq.getPriority() <= st._int;
+    	case min_priority:
+    		return permReq.getPriority() >= st._int;
     	case RULE_COUNT_PER_SWITCH:
     		//TODO
     		break;

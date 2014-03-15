@@ -10,6 +10,9 @@ public interface ConstraintListener extends ParseTreeListener {
 	void enterFieldS(ConstraintParser.FieldSContext ctx);
 	void exitFieldS(ConstraintParser.FieldSContext ctx);
 
+	void enterPriorityMin(ConstraintParser.PriorityMinContext ctx);
+	void exitPriorityMin(ConstraintParser.PriorityMinContext ctx);
+
 	void enterFieldM(ConstraintParser.FieldMContext ctx);
 	void exitFieldM(ConstraintParser.FieldMContext ctx);
 
@@ -94,11 +97,11 @@ public interface ConstraintListener extends ParseTreeListener {
 	void enterDrop(ConstraintParser.DropContext ctx);
 	void exitDrop(ConstraintParser.DropContext ctx);
 
+	void enterValIp(ConstraintParser.ValIpContext ctx);
+	void exitValIp(ConstraintParser.ValIpContext ctx);
+
 	void enterSingleBigSwitch(ConstraintParser.SingleBigSwitchContext ctx);
 	void exitSingleBigSwitch(ConstraintParser.SingleBigSwitchContext ctx);
-
-	void enterValueListS(ConstraintParser.ValueListSContext ctx);
-	void exitValueListS(ConstraintParser.ValueListSContext ctx);
 
 	void enterAssertNot(ConstraintParser.AssertNotContext ctx);
 	void exitAssertNot(ConstraintParser.AssertNotContext ctx);
@@ -121,11 +124,11 @@ public interface ConstraintListener extends ParseTreeListener {
 	void enterLink_idx(ConstraintParser.Link_idxContext ctx);
 	void exitLink_idx(ConstraintParser.Link_idxContext ctx);
 
-	void enterValueListM(ConstraintParser.ValueListMContext ctx);
-	void exitValueListM(ConstraintParser.ValueListMContext ctx);
-
 	void enterBindApp(ConstraintParser.BindAppContext ctx);
 	void exitBindApp(ConstraintParser.BindAppContext ctx);
+
+	void enterValInt(ConstraintParser.ValIntContext ctx);
+	void exitValInt(ConstraintParser.ValIntContext ctx);
 
 	void enterAssertOr(ConstraintParser.AssertOrContext ctx);
 	void exitAssertOr(ConstraintParser.AssertOrContext ctx);
@@ -154,14 +157,8 @@ public interface ConstraintListener extends ParseTreeListener {
 	void enterVirtualSwitchSetS(ConstraintParser.VirtualSwitchSetSContext ctx);
 	void exitVirtualSwitchSetS(ConstraintParser.VirtualSwitchSetSContext ctx);
 
-	void enterMax_priority(ConstraintParser.Max_priorityContext ctx);
-	void exitMax_priority(ConstraintParser.Max_priorityContext ctx);
-
-	void enterValueRangeS(ConstraintParser.ValueRangeSContext ctx);
-	void exitValueRangeS(ConstraintParser.ValueRangeSContext ctx);
-
-	void enterValueRangeM(ConstraintParser.ValueRangeMContext ctx);
-	void exitValueRangeM(ConstraintParser.ValueRangeMContext ctx);
+	void enterWildcard(ConstraintParser.WildcardContext ctx);
+	void exitWildcard(ConstraintParser.WildcardContext ctx);
 
 	void enterBindExpr(ConstraintParser.BindExprContext ctx);
 	void exitBindExpr(ConstraintParser.BindExprContext ctx);
@@ -184,11 +181,11 @@ public interface ConstraintListener extends ParseTreeListener {
 	void enterVirtual_topo(ConstraintParser.Virtual_topoContext ctx);
 	void exitVirtual_topo(ConstraintParser.Virtual_topoContext ctx);
 
+	void enterFieldMask(ConstraintParser.FieldMaskContext ctx);
+	void exitFieldMask(ConstraintParser.FieldMaskContext ctx);
+
 	void enterFlowTableB(ConstraintParser.FlowTableBContext ctx);
 	void exitFlowTableB(ConstraintParser.FlowTableBContext ctx);
-
-	void enterFieldList(ConstraintParser.FieldListContext ctx);
-	void exitFieldList(ConstraintParser.FieldListContext ctx);
 
 	void enterFlowTableA(ConstraintParser.FlowTableAContext ctx);
 	void exitFlowTableA(ConstraintParser.FlowTableAContext ctx);
@@ -214,6 +211,9 @@ public interface ConstraintListener extends ParseTreeListener {
 	void enterSwIdxListS(ConstraintParser.SwIdxListSContext ctx);
 	void exitSwIdxListS(ConstraintParser.SwIdxListSContext ctx);
 
+	void enterFieldVal(ConstraintParser.FieldValContext ctx);
+	void exitFieldVal(ConstraintParser.FieldValContext ctx);
+
 	void enterPktOut(ConstraintParser.PktOutContext ctx);
 	void exitPktOut(ConstraintParser.PktOutContext ctx);
 
@@ -222,9 +222,6 @@ public interface ConstraintListener extends ParseTreeListener {
 
 	void enterSwIdxListM(ConstraintParser.SwIdxListMContext ctx);
 	void exitSwIdxListM(ConstraintParser.SwIdxListMContext ctx);
-
-	void enterIp_range(ConstraintParser.Ip_rangeContext ctx);
-	void exitIp_range(ConstraintParser.Ip_rangeContext ctx);
 
 	void enterTopology(ConstraintParser.TopologyContext ctx);
 	void exitTopology(ConstraintParser.TopologyContext ctx);
@@ -277,14 +274,14 @@ public interface ConstraintListener extends ParseTreeListener {
 	void enterAllDriectLinks(ConstraintParser.AllDriectLinksContext ctx);
 	void exitAllDriectLinks(ConstraintParser.AllDriectLinksContext ctx);
 
+	void enterPriorityMax(ConstraintParser.PriorityMaxContext ctx);
+	void exitPriorityMax(ConstraintParser.PriorityMaxContext ctx);
+
 	void enterPerm_name(ConstraintParser.Perm_nameContext ctx);
 	void exitPerm_name(ConstraintParser.Perm_nameContext ctx);
 
 	void enterSw_idx(ConstraintParser.Sw_idxContext ctx);
 	void exitSw_idx(ConstraintParser.Sw_idxContext ctx);
-
-	void enterIp_format(ConstraintParser.Ip_formatContext ctx);
-	void exitIp_format(ConstraintParser.Ip_formatContext ctx);
 
 	void enterModifyField(ConstraintParser.ModifyFieldContext ctx);
 	void exitModifyField(ConstraintParser.ModifyFieldContext ctx);
@@ -303,7 +300,4 @@ public interface ConstraintListener extends ParseTreeListener {
 
 	void enterFlowPredicate(ConstraintParser.FlowPredicateContext ctx);
 	void exitFlowPredicate(ConstraintParser.FlowPredicateContext ctx);
-
-	void enterIpRange(ConstraintParser.IpRangeContext ctx);
-	void exitIpRange(ConstraintParser.IpRangeContext ctx);
 }

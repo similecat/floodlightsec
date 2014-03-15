@@ -16,6 +16,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 import net.floodlightcontroller.core.internal.Controller;
+import net.floodlightcontroller.core.internal.OFSwitchImpl;
 import net.floodlightcontroller.core.module.FloodlightModuleContext;
 import net.floodlightcontroller.core.module.FloodlightModuleLoader;
 import net.floodlightcontroller.devicemanager.internal.DeviceManagerImpl;
@@ -244,12 +245,12 @@ public class KernelDeputy implements Runnable {
 					OFMessage Msg = (OFMessage) args.get(0);
 					if(Msg.getType().equals(OFType.FLOW_MOD)){
 						OFFlowMod msg = (OFFlowMod) args.get(0);
-						eval.permReq.MsgTranslate(msg);
+						eval.permReq.MsgTranslate((OFSwitchImpl)obj, msg);
 						return;
 					}
 					else if(Msg.getType().equals(OFType.PACKET_OUT)){
 						OFPacketOut msg = (OFPacketOut) args.get(0);
-						eval.permReq.MsgTranslate(msg);
+						eval.permReq.MsgTranslate((OFSwitchImpl)obj, msg);
 						return;
 					}
 					else if(Msg.getType().equals(OFType.FLOW_REMOVED)){

@@ -6,7 +6,7 @@ public enum NodeType{
 	ip_range,ip_format,topo,physical_topo,switch_set,sw_idx_list,
 	sw_idx,link_set,link_list,link,path,link_idx,virtual_topo,
 	switch_mapping,virtual_switch_set,action,field_list,ownership,
-	max_priority,flow_table,notification,statistics,perm_name,
+	max_priority,min_priority,flow_table,notification,statistics,perm_name,
 	RULE_COUNT_PER_SWITCH,SIZE_PERCENTAGE_PER_SWITCH,
 	STRING,INT,FLOAT,
 	//

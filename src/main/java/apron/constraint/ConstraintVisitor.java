@@ -8,6 +8,8 @@ public interface ConstraintVisitor<T> extends ParseTreeVisitor<T> {
 
 	T visitFieldS(ConstraintParser.FieldSContext ctx);
 
+	T visitPriorityMin(ConstraintParser.PriorityMinContext ctx);
+
 	T visitFieldM(ConstraintParser.FieldMContext ctx);
 
 	T visitBind(ConstraintParser.BindContext ctx);
@@ -64,9 +66,9 @@ public interface ConstraintVisitor<T> extends ParseTreeVisitor<T> {
 
 	T visitDrop(ConstraintParser.DropContext ctx);
 
-	T visitSingleBigSwitch(ConstraintParser.SingleBigSwitchContext ctx);
+	T visitValIp(ConstraintParser.ValIpContext ctx);
 
-	T visitValueListS(ConstraintParser.ValueListSContext ctx);
+	T visitSingleBigSwitch(ConstraintParser.SingleBigSwitchContext ctx);
 
 	T visitAssertNot(ConstraintParser.AssertNotContext ctx);
 
@@ -82,9 +84,9 @@ public interface ConstraintVisitor<T> extends ParseTreeVisitor<T> {
 
 	T visitLink_idx(ConstraintParser.Link_idxContext ctx);
 
-	T visitValueListM(ConstraintParser.ValueListMContext ctx);
-
 	T visitBindApp(ConstraintParser.BindAppContext ctx);
+
+	T visitValInt(ConstraintParser.ValIntContext ctx);
 
 	T visitAssertOr(ConstraintParser.AssertOrContext ctx);
 
@@ -104,11 +106,7 @@ public interface ConstraintVisitor<T> extends ParseTreeVisitor<T> {
 
 	T visitVirtualSwitchSetS(ConstraintParser.VirtualSwitchSetSContext ctx);
 
-	T visitMax_priority(ConstraintParser.Max_priorityContext ctx);
-
-	T visitValueRangeS(ConstraintParser.ValueRangeSContext ctx);
-
-	T visitValueRangeM(ConstraintParser.ValueRangeMContext ctx);
+	T visitWildcard(ConstraintParser.WildcardContext ctx);
 
 	T visitBindExpr(ConstraintParser.BindExprContext ctx);
 
@@ -124,9 +122,9 @@ public interface ConstraintVisitor<T> extends ParseTreeVisitor<T> {
 
 	T visitVirtual_topo(ConstraintParser.Virtual_topoContext ctx);
 
-	T visitFlowTableB(ConstraintParser.FlowTableBContext ctx);
+	T visitFieldMask(ConstraintParser.FieldMaskContext ctx);
 
-	T visitFieldList(ConstraintParser.FieldListContext ctx);
+	T visitFlowTableB(ConstraintParser.FlowTableBContext ctx);
 
 	T visitFlowTableA(ConstraintParser.FlowTableAContext ctx);
 
@@ -144,13 +142,13 @@ public interface ConstraintVisitor<T> extends ParseTreeVisitor<T> {
 
 	T visitSwIdxListS(ConstraintParser.SwIdxListSContext ctx);
 
+	T visitFieldVal(ConstraintParser.FieldValContext ctx);
+
 	T visitPktOut(ConstraintParser.PktOutContext ctx);
 
 	T visitFilterTermOrFactor(ConstraintParser.FilterTermOrFactorContext ctx);
 
 	T visitSwIdxListM(ConstraintParser.SwIdxListMContext ctx);
-
-	T visitIp_range(ConstraintParser.Ip_rangeContext ctx);
 
 	T visitTopology(ConstraintParser.TopologyContext ctx);
 
@@ -186,11 +184,11 @@ public interface ConstraintVisitor<T> extends ParseTreeVisitor<T> {
 
 	T visitAllDriectLinks(ConstraintParser.AllDriectLinksContext ctx);
 
+	T visitPriorityMax(ConstraintParser.PriorityMaxContext ctx);
+
 	T visitPerm_name(ConstraintParser.Perm_nameContext ctx);
 
 	T visitSw_idx(ConstraintParser.Sw_idxContext ctx);
-
-	T visitIp_format(ConstraintParser.Ip_formatContext ctx);
 
 	T visitModifyField(ConstraintParser.ModifyFieldContext ctx);
 
@@ -203,6 +201,4 @@ public interface ConstraintVisitor<T> extends ParseTreeVisitor<T> {
 	T visitNotificationS(ConstraintParser.NotificationSContext ctx);
 
 	T visitFlowPredicate(ConstraintParser.FlowPredicateContext ctx);
-
-	T visitIpRange(ConstraintParser.IpRangeContext ctx);
 }

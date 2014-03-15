@@ -93,46 +93,38 @@ public class SyntaxGenerator extends ApronBaseVisitor <SyntaxTree>{
     public SyntaxTree visitSystemS(ApronParser.SystemSContext ctx){
         return visit(ctx.system());
     }
-    public SyntaxTree visitIpRange(ApronParser.IpRangeContext ctx){
-        return visit(ctx.ip_range());
-    }
-    public SyntaxTree visitFieldList(ApronParser.FieldListContext ctx){
+
+    public SyntaxTree visitFieldVal(ApronParser.FieldValContext ctx){
     	SyntaxTree ret = new SyntaxTree(NodeType.flow_predicate);
+    	ret.data(1);
         ret.add(visit(ctx.field()));
-        ret.add(visit(ctx.value_list()));
+        ret.add(visit(ctx.val()));
         return ret;
     }
-    public SyntaxTree visitField(ApronParser.FieldContext ctx){
-    	SyntaxTree ret = new SyntaxTree(NodeType.field);
-        ret.add(ctx.getText());
+    public SyntaxTree visitFieldMask(ApronParser.FieldMaskContext ctx){
+    	SyntaxTree ret = new SyntaxTree(NodeType.flow_predicate);
+    	ret.data(2);
+        ret.add(visit(ctx.field()));
+        ret.add(visit(ctx.val(0)));
+        ret.add(visit(ctx.val(1)));
         return ret;
     }
-    public SyntaxTree visitValueListS(ApronParser.ValueListSContext ctx){
-    	SyntaxTree ret = new SyntaxTree(NodeType.value_list);
-    	ret.add(visit(ctx.value_range()));
+    public SyntaxTree visitWildcard(ApronParser.WildcardContext ctx){
+    	SyntaxTree ret = new SyntaxTree(NodeType.flow_predicate);
+    	ret.data(3);
+        ret.add(visit(ctx.field()));
+        ret.add(visit(ctx.val()));
         return ret;
     }
-    public SyntaxTree visitValueListM(ApronParser.ValueListMContext ctx){
-    	SyntaxTree ret = new SyntaxTree(NodeType.value_list);
-    	ret.add(visit(ctx.value_range()));
-        ret.add(visit(ctx.value_list()));
+    
+    public SyntaxTree visitValInt(ApronParser.ValIntContext ctx){
+    	SyntaxTree ret = new SyntaxTree(NodeType.flow_predicate);
+        ret.data(Integer.valueOf(ctx.INT().getText()));
         return ret;
     }
-    public SyntaxTree visitValueRangeS(ApronParser.ValueRangeSContext ctx){
-    	SyntaxTree ret = new SyntaxTree(NodeType.value_range);
-    	ret.add(Integer.valueOf(ctx.INT().getText()));
-        return ret;
-    }
-    public SyntaxTree visitValueRangeM(ApronParser.ValueRangeMContext ctx){
-    	SyntaxTree ret = new SyntaxTree(NodeType.value_range);
-        ret.add(Integer.valueOf(ctx.INT(0).getText()));
-        ret.add(Integer.valueOf(ctx.INT(1).getText()));
-        return ret;
-    }
-    public SyntaxTree visitIp_range(ApronParser.Ip_rangeContext ctx){
-    	SyntaxTree ret = new SyntaxTree(NodeType.ip_range);
-        ret.add(ctx.ip_format(0).getText());
-        ret.add(ctx.ip_format(1).getText());
+    public SyntaxTree visitValIp(ApronParser.ValIpContext ctx){
+    	SyntaxTree ret = new SyntaxTree(NodeType.flow_predicate);
+        ret.data(Integer.valueOf(ctx.IP_FORMAT().getText()));
         return ret;
     }
     public SyntaxTree visitPhysicalTopo(ApronParser.PhysicalTopoContext ctx){
@@ -153,22 +145,26 @@ public class SyntaxGenerator extends ApronBaseVisitor <SyntaxTree>{
     }
     public SyntaxTree visitAllSwitches(ApronParser.AllSwitchesContext ctx){
     	SyntaxTree ret = new SyntaxTree(NodeType.switch_set);
+    	ret.data(1);
     	ret.data(ctx.ALL_SWITCHES().getText());
         return ret;
     }
     public SyntaxTree visitBorderSwitches(ApronParser.BorderSwitchesContext ctx){
     	SyntaxTree ret = new SyntaxTree(NodeType.switch_set);
+    	ret.data(2);
     	ret.data(ctx.BORDER_SWITCHES().getText());
         return ret;
     }
     public SyntaxTree visitSwIdxList(ApronParser.SwIdxListContext ctx){
     	SyntaxTree ret = new SyntaxTree(NodeType.switch_set);
+    	ret.data(3);
         ret.add(visit(ctx.sw_idx_list()));
         return ret;
     }
     public SyntaxTree visitSwIdxListS(ApronParser.SwIdxListSContext ctx){
     	SyntaxTree ret = new SyntaxTree(NodeType.sw_idx_list);
     	ret.add(visit(ctx.sw_idx()));
+    	//ret.data(Long.valueOf(ctx.sw_idx().getText()));
         return ret;
     }
     public SyntaxTree visitSwIdxListM(ApronParser.SwIdxListMContext ctx){
@@ -179,7 +175,7 @@ public class SyntaxGenerator extends ApronBaseVisitor <SyntaxTree>{
     }
     public SyntaxTree visitSw_idx(ApronParser.Sw_idxContext ctx){
     	SyntaxTree ret = new SyntaxTree(NodeType.sw_idx);
-    	ret.add(Integer.valueOf(ctx.INT().getText()));
+    	ret.data(Long.valueOf(ctx.INT().getText()));
         return ret;
     }
     public SyntaxTree visitAllDriectLinks(ApronParser.AllDriectLinksContext ctx){
@@ -210,7 +206,8 @@ public class SyntaxGenerator extends ApronBaseVisitor <SyntaxTree>{
     }
     public SyntaxTree visitLinkS(ApronParser.LinkSContext ctx){
     	SyntaxTree ret = new SyntaxTree(NodeType.link);
-        ret.add(visit(ctx.link_idx()));
+        ret.add(visit(ctx.link_idx(0)));
+        ret.add(visit(ctx.link_idx(1)));
         return ret;
     }
     public SyntaxTree visitLinkM(ApronParser.LinkMContext ctx){
@@ -233,7 +230,8 @@ public class SyntaxGenerator extends ApronBaseVisitor <SyntaxTree>{
     }
     public SyntaxTree visitLink_idx(ApronParser.Link_idxContext ctx){
     	SyntaxTree ret = new SyntaxTree(NodeType.link_idx);
-    	ret.add(ctx.INT().getText());
+    	ret.add(visit(ctx.sw_idx()));
+    	ret.data(Integer.valueOf(ctx.INT().getText()));
     	return ret;
     }
     public SyntaxTree visitVirtual_topo(ApronParser.Virtual_topoContext ctx){
@@ -282,7 +280,7 @@ public class SyntaxGenerator extends ApronBaseVisitor <SyntaxTree>{
     	ret.add(visit(ctx.field_list()));
         return ret;
     }
-    public SyntaxTree visitFiledS(ApronParser.FiledSContext ctx){
+    public SyntaxTree visitFieldS(ApronParser.FieldSContext ctx){
         return visit(ctx.field());
     }
     public SyntaxTree visitFieldM(ApronParser.FieldMContext ctx){
@@ -306,8 +304,13 @@ public class SyntaxGenerator extends ApronBaseVisitor <SyntaxTree>{
     	ret.data(ctx.ALL_FLOWS().getText());
         return ret;        
     }
-    public SyntaxTree visitMax_priority(ApronParser.Max_priorityContext ctx){
+    public SyntaxTree visitPriorityMax(ApronParser.PriorityMaxContext ctx){
     	SyntaxTree ret = new SyntaxTree(NodeType.max_priority);
+    	ret.data(Integer.valueOf(ctx.INT().getText()));
+        return ret;
+    }
+    public SyntaxTree visitPriorityMin(ApronParser.PriorityMinContext ctx){
+    	SyntaxTree ret = new SyntaxTree(NodeType.min_priority);
     	ret.data(Integer.valueOf(ctx.INT().getText()));
         return ret;
     }

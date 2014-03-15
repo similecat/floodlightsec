@@ -4,17 +4,17 @@ import org.antlr.v4.runtime.tree.*;
 import org.antlr.v4.runtime.Token;
 
 public interface ApronVisitor<T> extends ParseTreeVisitor<T> {
+	T visitFieldS(ApronParser.FieldSContext ctx);
+
+	T visitPriorityMin(ApronParser.PriorityMinContext ctx);
+
 	T visitVirtualSwitchSetS(ApronParser.VirtualSwitchSetSContext ctx);
 
 	T visitFieldM(ApronParser.FieldMContext ctx);
 
-	T visitMax_priority(ApronParser.Max_priorityContext ctx);
-
-	T visitValueRangeS(ApronParser.ValueRangeSContext ctx);
+	T visitWildcard(ApronParser.WildcardContext ctx);
 
 	T visitSwitchLevel(ApronParser.SwitchLevelContext ctx);
-
-	T visitValueRangeM(ApronParser.ValueRangeMContext ctx);
 
 	T visitForward(ApronParser.ForwardContext ctx);
 
@@ -36,6 +36,8 @@ public interface ApronVisitor<T> extends ParseTreeVisitor<T> {
 
 	T visitVirtual_topo(ApronParser.Virtual_topoContext ctx);
 
+	T visitFieldMask(ApronParser.FieldMaskContext ctx);
+
 	T visitFlowLevel(ApronParser.FlowLevelContext ctx);
 
 	T visitFlowTableB(ApronParser.FlowTableBContext ctx);
@@ -43,8 +45,6 @@ public interface ApronVisitor<T> extends ParseTreeVisitor<T> {
 	T visitFilterTermFactor(ApronParser.FilterTermFactorContext ctx);
 
 	T visitFlowTableA(ApronParser.FlowTableAContext ctx);
-
-	T visitFieldList(ApronParser.FieldListContext ctx);
 
 	T visitPermS(ApronParser.PermSContext ctx);
 
@@ -56,11 +56,11 @@ public interface ApronVisitor<T> extends ParseTreeVisitor<T> {
 
 	T visitFilterExprAndTerm(ApronParser.FilterExprAndTermContext ctx);
 
-	T visitFiledS(ApronParser.FiledSContext ctx);
-
 	T visitSwIdxListS(ApronParser.SwIdxListSContext ctx);
 
 	T visitModifyEventOrder(ApronParser.ModifyEventOrderContext ctx);
+
+	T visitFieldVal(ApronParser.FieldValContext ctx);
 
 	T visitPktOut(ApronParser.PktOutContext ctx);
 
@@ -79,8 +79,6 @@ public interface ApronVisitor<T> extends ParseTreeVisitor<T> {
 	T visitFileDeny(ApronParser.FileDenyContext ctx);
 
 	T visitPortLevel(ApronParser.PortLevelContext ctx);
-
-	T visitIp_range(ApronParser.Ip_rangeContext ctx);
 
 	T visitNetworkAllow(ApronParser.NetworkAllowContext ctx);
 
@@ -110,7 +108,7 @@ public interface ApronVisitor<T> extends ParseTreeVisitor<T> {
 
 	T visitSingleBigSwitch(ApronParser.SingleBigSwitchContext ctx);
 
-	T visitValueListS(ApronParser.ValueListSContext ctx);
+	T visitValIp(ApronParser.ValIpContext ctx);
 
 	T visitPathM(ApronParser.PathMContext ctx);
 
@@ -128,11 +126,11 @@ public interface ApronVisitor<T> extends ParseTreeVisitor<T> {
 
 	T visitPermM(ApronParser.PermMContext ctx);
 
-	T visitLink_idx(ApronParser.Link_idxContext ctx);
-
 	T visitAllDriectLinks(ApronParser.AllDriectLinksContext ctx);
 
-	T visitValueListM(ApronParser.ValueListMContext ctx);
+	T visitLink_idx(ApronParser.Link_idxContext ctx);
+
+	T visitPriorityMax(ApronParser.PriorityMaxContext ctx);
 
 	T visitPerm_name(ApronParser.Perm_nameContext ctx);
 
@@ -140,7 +138,7 @@ public interface ApronVisitor<T> extends ParseTreeVisitor<T> {
 
 	T visitModifyField(ApronParser.ModifyFieldContext ctx);
 
-	T visitIp_format(ApronParser.Ip_formatContext ctx);
+	T visitValInt(ApronParser.ValIntContext ctx);
 
 	T visitPktOutDeny(ApronParser.PktOutDenyContext ctx);
 
@@ -163,6 +161,4 @@ public interface ApronVisitor<T> extends ParseTreeVisitor<T> {
 	T visitFlowPredicate(ApronParser.FlowPredicateContext ctx);
 
 	T visitLinkListM(ApronParser.LinkListMContext ctx);
-
-	T visitIpRange(ApronParser.IpRangeContext ctx);
 }

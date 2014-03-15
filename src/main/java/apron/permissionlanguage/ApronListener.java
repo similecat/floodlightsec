@@ -4,23 +4,23 @@ import org.antlr.v4.runtime.tree.*;
 import org.antlr.v4.runtime.Token;
 
 public interface ApronListener extends ParseTreeListener {
+	void enterFieldS(ApronParser.FieldSContext ctx);
+	void exitFieldS(ApronParser.FieldSContext ctx);
+
+	void enterPriorityMin(ApronParser.PriorityMinContext ctx);
+	void exitPriorityMin(ApronParser.PriorityMinContext ctx);
+
 	void enterVirtualSwitchSetS(ApronParser.VirtualSwitchSetSContext ctx);
 	void exitVirtualSwitchSetS(ApronParser.VirtualSwitchSetSContext ctx);
 
 	void enterFieldM(ApronParser.FieldMContext ctx);
 	void exitFieldM(ApronParser.FieldMContext ctx);
 
-	void enterMax_priority(ApronParser.Max_priorityContext ctx);
-	void exitMax_priority(ApronParser.Max_priorityContext ctx);
-
-	void enterValueRangeS(ApronParser.ValueRangeSContext ctx);
-	void exitValueRangeS(ApronParser.ValueRangeSContext ctx);
+	void enterWildcard(ApronParser.WildcardContext ctx);
+	void exitWildcard(ApronParser.WildcardContext ctx);
 
 	void enterSwitchLevel(ApronParser.SwitchLevelContext ctx);
 	void exitSwitchLevel(ApronParser.SwitchLevelContext ctx);
-
-	void enterValueRangeM(ApronParser.ValueRangeMContext ctx);
-	void exitValueRangeM(ApronParser.ValueRangeMContext ctx);
 
 	void enterForward(ApronParser.ForwardContext ctx);
 	void exitForward(ApronParser.ForwardContext ctx);
@@ -52,6 +52,9 @@ public interface ApronListener extends ParseTreeListener {
 	void enterVirtual_topo(ApronParser.Virtual_topoContext ctx);
 	void exitVirtual_topo(ApronParser.Virtual_topoContext ctx);
 
+	void enterFieldMask(ApronParser.FieldMaskContext ctx);
+	void exitFieldMask(ApronParser.FieldMaskContext ctx);
+
 	void enterFlowLevel(ApronParser.FlowLevelContext ctx);
 	void exitFlowLevel(ApronParser.FlowLevelContext ctx);
 
@@ -63,9 +66,6 @@ public interface ApronListener extends ParseTreeListener {
 
 	void enterFlowTableA(ApronParser.FlowTableAContext ctx);
 	void exitFlowTableA(ApronParser.FlowTableAContext ctx);
-
-	void enterFieldList(ApronParser.FieldListContext ctx);
-	void exitFieldList(ApronParser.FieldListContext ctx);
 
 	void enterPermS(ApronParser.PermSContext ctx);
 	void exitPermS(ApronParser.PermSContext ctx);
@@ -82,14 +82,14 @@ public interface ApronListener extends ParseTreeListener {
 	void enterFilterExprAndTerm(ApronParser.FilterExprAndTermContext ctx);
 	void exitFilterExprAndTerm(ApronParser.FilterExprAndTermContext ctx);
 
-	void enterFiledS(ApronParser.FiledSContext ctx);
-	void exitFiledS(ApronParser.FiledSContext ctx);
-
 	void enterSwIdxListS(ApronParser.SwIdxListSContext ctx);
 	void exitSwIdxListS(ApronParser.SwIdxListSContext ctx);
 
 	void enterModifyEventOrder(ApronParser.ModifyEventOrderContext ctx);
 	void exitModifyEventOrder(ApronParser.ModifyEventOrderContext ctx);
+
+	void enterFieldVal(ApronParser.FieldValContext ctx);
+	void exitFieldVal(ApronParser.FieldValContext ctx);
 
 	void enterPktOut(ApronParser.PktOutContext ctx);
 	void exitPktOut(ApronParser.PktOutContext ctx);
@@ -117,9 +117,6 @@ public interface ApronListener extends ParseTreeListener {
 
 	void enterPortLevel(ApronParser.PortLevelContext ctx);
 	void exitPortLevel(ApronParser.PortLevelContext ctx);
-
-	void enterIp_range(ApronParser.Ip_rangeContext ctx);
-	void exitIp_range(ApronParser.Ip_rangeContext ctx);
 
 	void enterNetworkAllow(ApronParser.NetworkAllowContext ctx);
 	void exitNetworkAllow(ApronParser.NetworkAllowContext ctx);
@@ -163,8 +160,8 @@ public interface ApronListener extends ParseTreeListener {
 	void enterSingleBigSwitch(ApronParser.SingleBigSwitchContext ctx);
 	void exitSingleBigSwitch(ApronParser.SingleBigSwitchContext ctx);
 
-	void enterValueListS(ApronParser.ValueListSContext ctx);
-	void exitValueListS(ApronParser.ValueListSContext ctx);
+	void enterValIp(ApronParser.ValIpContext ctx);
+	void exitValIp(ApronParser.ValIpContext ctx);
 
 	void enterPathM(ApronParser.PathMContext ctx);
 	void exitPathM(ApronParser.PathMContext ctx);
@@ -190,14 +187,14 @@ public interface ApronListener extends ParseTreeListener {
 	void enterPermM(ApronParser.PermMContext ctx);
 	void exitPermM(ApronParser.PermMContext ctx);
 
-	void enterLink_idx(ApronParser.Link_idxContext ctx);
-	void exitLink_idx(ApronParser.Link_idxContext ctx);
-
 	void enterAllDriectLinks(ApronParser.AllDriectLinksContext ctx);
 	void exitAllDriectLinks(ApronParser.AllDriectLinksContext ctx);
 
-	void enterValueListM(ApronParser.ValueListMContext ctx);
-	void exitValueListM(ApronParser.ValueListMContext ctx);
+	void enterLink_idx(ApronParser.Link_idxContext ctx);
+	void exitLink_idx(ApronParser.Link_idxContext ctx);
+
+	void enterPriorityMax(ApronParser.PriorityMaxContext ctx);
+	void exitPriorityMax(ApronParser.PriorityMaxContext ctx);
 
 	void enterPerm_name(ApronParser.Perm_nameContext ctx);
 	void exitPerm_name(ApronParser.Perm_nameContext ctx);
@@ -208,8 +205,8 @@ public interface ApronListener extends ParseTreeListener {
 	void enterModifyField(ApronParser.ModifyFieldContext ctx);
 	void exitModifyField(ApronParser.ModifyFieldContext ctx);
 
-	void enterIp_format(ApronParser.Ip_formatContext ctx);
-	void exitIp_format(ApronParser.Ip_formatContext ctx);
+	void enterValInt(ApronParser.ValIntContext ctx);
+	void exitValInt(ApronParser.ValIntContext ctx);
 
 	void enterPktOutDeny(ApronParser.PktOutDenyContext ctx);
 	void exitPktOutDeny(ApronParser.PktOutDenyContext ctx);
@@ -243,7 +240,4 @@ public interface ApronListener extends ParseTreeListener {
 
 	void enterLinkListM(ApronParser.LinkListMContext ctx);
 	void exitLinkListM(ApronParser.LinkListMContext ctx);
-
-	void enterIpRange(ApronParser.IpRangeContext ctx);
-	void exitIpRange(ApronParser.IpRangeContext ctx);
 }
